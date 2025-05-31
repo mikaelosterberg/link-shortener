@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ClickTrendsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Click Trends (Last 30 Days)';
+    protected static ?string $heading = 'Click Trends';
     
     protected static ?int $sort = 3;
     
@@ -73,6 +73,19 @@ class ClickTrendsChart extends ChartWidget
             '30' => 'Last 30 days',
             '90' => 'Last 3 months',
         ];
+    }
+    
+    public function getHeading(): string
+    {
+        $filterLabels = [
+            '7' => 'Last 7 Days',
+            '30' => 'Last 30 Days',
+            '90' => 'Last 3 Months',
+        ];
+        
+        $selectedLabel = $filterLabels[$this->filter] ?? 'Last 30 Days';
+        
+        return 'Click Trends (' . $selectedLabel . ')';
     }
     
     protected function getOptions(): array
