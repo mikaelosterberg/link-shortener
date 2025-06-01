@@ -335,15 +335,15 @@ You can always customize permissions in the admin panel at "Settings" → "Roles
 **API Authentication Methods:**
 ```bash
 # Method 1: Authorization Header (Recommended)
-curl -X GET 'https://redirection.test/api/links' \
+curl -X GET 'https://example.com/api/links' \
   -H 'Authorization: Bearer sk_your_api_key'
 
 # Method 2: X-API-Key Header  
-curl -X GET 'https://redirection.test/api/links' \
+curl -X GET 'https://example.com/api/links' \
   -H 'X-API-Key: sk_your_api_key'
 
 # Method 3: Query Parameter (Easy for testing)
-curl -X GET 'https://redirection.test/api/links?api_key=sk_your_api_key'
+curl -X GET 'https://example.com/api/links?api_key=sk_your_api_key'
 ```
 
 ### API Endpoints
