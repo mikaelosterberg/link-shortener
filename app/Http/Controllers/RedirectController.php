@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\LinkClicked;
+use App\Events\LinkNotFound;
 use App\Jobs\LogClickJob;
+use App\Models\Link;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -23,17 +26,50 @@ class RedirectController extends Controller
         });
         
         if (!$link) {
+            // Dispatch event for plugins/listeners to handle
+            event(new LinkNotFound($shortCode, request()));
+            
+            // Track 404 attempts if configured
+            if (config('shortener.not_found.track_attempts', true)) {
+                // Could log to analytics or database here
+                logger('Link not found: ' . $shortCode, [
+                    'ip' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'referer' => request()->header('referer'),
+                ]);
+            }
+            
+            // Custom redirect instead of 404
+            if ($redirectUrl = config('shortener.not_found.redirect_url')) {
+                return redirect($redirectUrl);
+            }
+            
+            // Custom 404 view
+            if ($customView = config('shortener.not_found.view')) {
+                return response()->view($customView, [
+                    'short_code' => $shortCode
+                ], 404);
+            }
+            
             abort(404);
         }
         
+        // Create Link model instance for event (more useful than raw DB result)
+        $linkModel = Link::find($link->id);
+        
+        // Dispatch click event for analytics/plugins
+        event(new LinkClicked($linkModel, request()));
+        
         // Log click asynchronously
-        LogClickJob::dispatch([
-            'link_id' => $link->id,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'referer' => request()->header('referer'),
-            'clicked_at' => now()
-        ])->onQueue('clicks');
+        if (config('shortener.analytics.async_tracking', true)) {
+            LogClickJob::dispatch([
+                'link_id' => $link->id,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referer' => request()->header('referer'),
+                'clicked_at' => now()
+            ])->onQueue('clicks');
+        }
         
         // Increment counter asynchronously
         DB::table('links')->where('id', $link->id)->increment('click_count');

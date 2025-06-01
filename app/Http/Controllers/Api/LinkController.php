@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Link;
+use App\Models\LinkGroup;
 use App\Services\LinkShortenerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -78,10 +79,19 @@ class LinkController extends Controller
         try {
             $shortCode = $this->linkService->generateUniqueCode($request->custom_slug);
             
+            // Use default group if no group_id provided
+            $groupId = $request->group_id;
+            if (!$groupId) {
+                $defaultGroup = LinkGroup::getDefault();
+                if ($defaultGroup) {
+                    $groupId = $defaultGroup->id;
+                }
+            }
+            
             $link = Link::create([
                 'short_code' => $shortCode,
                 'original_url' => $request->original_url,
-                'group_id' => $request->group_id,
+                'group_id' => $groupId,
                 'redirect_type' => $request->redirect_type ?? 302,
                 'is_active' => true,
                 'expires_at' => $request->expires_at,
@@ -192,6 +202,75 @@ class LinkController extends Controller
         return response()->json([
             'message' => 'Link deleted successfully'
         ]);
+    }
+
+    /**
+     * Simple link creation endpoint with minimal response
+     * 
+     * This endpoint provides a streamlined response format
+     * for applications that only need the shorturl field
+     */
+    public function simpleStore(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'url' => 'required|url|max:2048',
+            'keyword' => 'nullable|string|max:255|regex:/^[a-z0-9\-_]*$/|unique:links,short_code',
+            'title' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'fail',
+                'code' => 'error:validation',
+                'message' => 'Validation failed: ' . $validator->errors()->first(),
+                'statusCode' => 422
+            ], 422);
+        }
+
+        try {
+            $shortCode = $this->linkService->generateUniqueCode($request->keyword);
+            
+            // Use default group for simple API
+            $defaultGroup = LinkGroup::getDefault();
+            $groupId = $defaultGroup ? $defaultGroup->id : null;
+            
+            $link = Link::create([
+                'short_code' => $shortCode,
+                'original_url' => $request->url,
+                'group_id' => $groupId,
+                'redirect_type' => 302,
+                'is_active' => true,
+                'created_by' => auth()->id(),
+                'custom_slug' => $request->keyword,
+                'click_count' => 0,
+            ]);
+
+            $shortUrl = url($link->short_code);
+
+            // Simple response format
+            return response()->json([
+                'url' => [
+                    'keyword' => $link->short_code,
+                    'url' => $link->original_url,
+                    'title' => $request->title ?? '',
+                    'date' => $link->created_at->format('Y-m-d H:i:s'),
+                    'ip' => $request->ip()
+                ],
+                'status' => 'success',
+                'message' => $link->original_url . ' added to database',
+                'title' => $request->title ?? '',
+                'shorturl' => $shortUrl,
+                'statusCode' => 200
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'fail',
+                'code' => 'error:creation',
+                'message' => 'Failed to create short URL: ' . $e->getMessage(),
+                'statusCode' => 400
+            ], 400);
+        }
     }
 
     /**

@@ -5,7 +5,19 @@ use App\Http\Controllers\QrCodeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    // Redirect to admin panel if configured
+    if (config('shortener.homepage.redirect_to_admin')) {
+        return redirect('/admin');
+    }
+    
+    // Custom redirect URL takes precedence
+    if ($customUrl = config('shortener.homepage.redirect_url')) {
+        return redirect($customUrl);
+    }
+    
+    // Use custom view or default welcome page
+    $view = config('shortener.homepage.view', 'welcome');
+    return view($view);
 });
 
 // QR Code routes (must come before the redirect route)

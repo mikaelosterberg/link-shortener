@@ -28,11 +28,22 @@ class LinkGroupResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    ->maxLength(255),
                 Forms\Components\Textarea::make('description')
+                    ->maxLength(1000)
                     ->columnSpanFull(),
-                Forms\Components\TextInput::make('color')
+                Forms\Components\ColorPicker::make('color')
                     ->required(),
+                Forms\Components\Toggle::make('is_default')
+                    ->label('Set as default group')
+                    ->helperText('New links without a specified group will be added to the default group')
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            // Optionally show a notification that other defaults will be unset
+                        }
+                    }),
             ]);
     }
 
@@ -41,9 +52,26 @@ class LinkGroupResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('color')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\ColorColumn::make('color')
+                    ->copyable()
+                    ->copyMessage('Color copied')
+                    ->copyMessageDuration(1500),
+                Tables\Columns\IconColumn::make('is_default')
+                    ->boolean()
+                    ->label('Default')
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('gray'),
+                Tables\Columns\TextColumn::make('links_count')
+                    ->counts('links')
+                    ->label('Links')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('description')
+                    ->limit(50)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -57,6 +85,17 @@ class LinkGroupResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('setDefault')
+                    ->label('Set as Default')
+                    ->icon('heroicon-o-star')
+                    ->visible(fn ($record) => !$record->is_default)
+                    ->action(function ($record) {
+                        $record->setAsDefault();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Set as Default Group')
+                    ->modalDescription('This will make this group the default for new links. Any existing default will be unset.')
+                    ->modalSubmitActionLabel('Yes, set as default'),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

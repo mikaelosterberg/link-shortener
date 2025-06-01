@@ -76,7 +76,9 @@ return [
             'AccountWidget', 'FilamentInfoWidget',
         ],
 
-        'resources' => [],
+        'resources' => [
+            'RoleResource', // Exclude role management from permission checks - only super_admin can access
+        ],
     ],
 
     'discovery' => [

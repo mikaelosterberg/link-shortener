@@ -114,12 +114,42 @@ class LinkResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('group.name')
                     ->label('Category')
-                    ->badge()
-                    ->color(fn ($record) => $record->group?->color ?? 'gray'),
+                    ->html()
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$state) {
+                            return '<span class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1 fi-color-custom bg-custom-50 text-custom-600 ring-custom-600/10 dark:bg-custom-400/10 dark:text-custom-400 dark:ring-custom-400/30" style="--c-50: var(--gray-50); --c-400: var(--gray-400); --c-600: var(--gray-600);">Uncategorized</span>';
+                        }
+                        
+                        $color = $record->group->color ?? '#6B7280';
+                        $textColor = self::getContrastColor($color);
+                        
+                        return sprintf(
+                            '<span class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1" style="background-color: %s; color: %s; border-color: %s;">%s</span>',
+                            $color,
+                            $textColor,
+                            $color,
+                            e($state)
+                        );
+                    })
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('click_count')
                     ->label('Clicks')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\IconColumn::make('health_status')
+                    ->label('Health')
+                    ->icon(fn ($record) => $record->health_status_icon)
+                    ->color(fn ($record) => $record->health_status_color)
+                    ->tooltip(function ($record) {
+                        if (!$record->last_checked_at) {
+                            return 'Not checked yet';
+                        }
+                        return sprintf(
+                            '%s - Last checked: %s',
+                            $record->health_check_message ?? 'Unknown',
+                            $record->last_checked_at->diffForHumans()
+                        );
+                    }),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
@@ -142,6 +172,14 @@ class LinkResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('group')
                     ->relationship('group', 'name'),
+                Tables\Filters\SelectFilter::make('health_status')
+                    ->options([
+                        'unchecked' => 'Not Checked',
+                        'healthy' => 'Healthy',
+                        'warning' => 'Warning',
+                        'error' => 'Error',
+                    ])
+                    ->label('Health Status'),
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active'),
                 Tables\Filters\Filter::make('expired')
@@ -177,11 +215,36 @@ class LinkResource extends Resource
                     ->icon('heroicon-o-chart-bar')
                     ->url(fn ($record) => static::getUrl('edit', ['record' => $record->id]) . '#clicks')
                     ->tooltip('View click statistics'),
+                Tables\Actions\Action::make('check_health')
+                    ->label('Check Health')
+                    ->icon('heroicon-o-arrow-path')
+                    ->action(function ($record) {
+                        \App\Jobs\CheckLinkHealthJob::dispatch($record);
+                    })
+                    ->tooltip('Check link health now')
+                    ->requiresConfirmation()
+                    ->modalHeading('Check Link Health')
+                    ->modalDescription('This will check if the destination URL is still accessible.')
+                    ->modalSubmitActionLabel('Check Now')
+                    ->successNotificationTitle('Health check queued'),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('check_health')
+                        ->label('Check Health')
+                        ->icon('heroicon-o-arrow-path')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                \App\Jobs\CheckLinkHealthJob::dispatch($record);
+                            }
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Check Link Health')
+                        ->modalDescription('This will check if the selected destination URLs are still accessible.')
+                        ->modalSubmitActionLabel('Check Now')
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
@@ -201,5 +264,25 @@ class LinkResource extends Resource
             'create' => Pages\CreateLink::route('/create'),
             'edit' => Pages\EditLink::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Calculate appropriate text color (black or white) based on background color
+     */
+    private static function getContrastColor(string $hexColor): string
+    {
+        // Remove # if present
+        $hex = ltrim($hexColor, '#');
+        
+        // Convert to RGB
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        // Calculate luminance
+        $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+        
+        // Return black for light backgrounds, white for dark
+        return $luminance > 0.5 ? '#000000' : '#ffffff';
     }
 }

@@ -9,7 +9,7 @@ A link shortening/redirection service built with Laravel and Filament to learn t
 - **Host OS**: Windows with Laragon
 - **Laravel App Location**: Running under Laragon on C: drive
 - **Local URL**: https://redirection.test
-- **PHP Path**: `C:\laragon\bin\php\php-8.3.15-Win32-vs16-x64\php.exe`
+- **PHP Path**: `C:\laragon\bin\php\php-8.3\php.exe`
 - **Database**: SQLite (simpler than MySQL for learning)
 - **Claude Code**: Running on Windows Subsystem for Linux (WSL)
 
@@ -71,8 +71,15 @@ geo_rules: id, link_id, country_codes, redirect_url,
 
 ### 1. Admin Panel (Filament)
 **User Management** (Super Admin only)
-- Create/edit/delete admin users
-- Assign roles: Super Admin, Staff, Viewer
+- Create/edit/delete admin users with role assignment
+- Role-based access control with 4 roles:
+  - `super_admin` - Unrestricted access to everything
+  - `admin` - Limited permissions (assignable by super admin)
+  - `user` - Basic role for regular users
+  - `panel_user` - Basic panel access
+- Automatic email verification handling
+- Role-based UI visibility (super admins see all options)
+- Security controls (can't delete self or other super admins)
 
 **Link Management** (Standard Laravel/Filament)
 - CRUD operations using Filament resources and Eloquent
@@ -107,8 +114,11 @@ geo_rules: id, link_id, country_codes, redirect_url,
 ### 3. API System
 **Authentication**: Laravel Sanctum API tokens
 **Endpoints**:
+
+**Links API**:
 ```
-POST /api/links - Create short link
+POST /api/links - Create short link (full response)
+POST /api/simple - Create short link (simple response format)
 GET /api/links - List user's links
 GET /api/links/{id} - Get link details
 PUT /api/links/{id} - Update link
@@ -116,7 +126,208 @@ DELETE /api/links/{id} - Delete link
 GET /api/links/{id}/stats - Get click statistics
 ```
 
-### 4. Analytics Integration
+**Groups API** (NEW):
+```
+GET /api/groups - List all groups (use ?simple=true for dropdown)
+GET /api/groups/{id} - Get group details
+POST /api/groups - Create new group
+PUT /api/groups/{id} - Update group
+DELETE /api/groups/{id} - Delete group (only if empty)
+```
+
+**Default Group Feature**:
+- Groups can be marked as default with `is_default` field
+- Only one group can be default at a time
+- Links created without `group_id` use the default group automatically
+- Set default via API: `POST/PUT` with `"is_default": true`
+
+**Simple API Format**:
+The `/api/simple` endpoint provides a streamlined response format:
+
+*Request Parameters*:
+- `url` (required): URL to shorten
+- `keyword` (optional): Custom short code
+- `title` (optional): Link title
+
+*Response Format*:
+```json
+{
+  "url": {
+    "keyword": "abc123",
+    "url": "https://example.com",
+    "title": "Example Site",
+    "date": "2025-01-01 12:00:00",
+    "ip": "127.0.0.1"
+  },
+  "status": "success",
+  "message": "https://example.com added to database",
+  "shorturl": "https://redirection.test/abc123",
+  "statusCode": 200
+}
+```
+
+Applications can extract the `shorturl` field directly for immediate use.
+
+### 4. Extensibility & Customization
+
+The application supports customization without modifying core code through configuration files, events, and service providers.
+
+#### Configuration-Based Customization
+
+**Homepage Behavior** (`config/shortener.php`):
+```php
+'homepage' => [
+    'redirect_to_admin' => true,           // Redirect / to /admin
+    'redirect_url' => 'https://mysite.com', // Or redirect to external URL
+    'view' => 'custom.homepage',           // Or use custom view
+],
+```
+
+**404 Handling**:
+```php
+'not_found' => [
+    'redirect_url' => 'https://mysite.com',  // Redirect instead of 404
+    'track_attempts' => true,                // Log failed attempts
+    'view' => 'custom.not-found',           // Custom 404 page
+],
+```
+
+**Link Processing**:
+```php
+'link_processing' => [
+    'validate_ssl' => true,      // Validate destination SSL
+    'max_redirects' => 5,        // Max redirects to follow
+    'validation_timeout' => 10,  // URL validation timeout
+],
+```
+
+#### Event-Driven Extensions
+
+**Key Events Dispatched**:
+```php
+// When a link is clicked successfully
+event(new LinkClicked($link, $request));
+
+// When a short code is not found
+event(new LinkNotFound($shortCode, $request));
+```
+
+**Custom Event Listeners**:
+```php
+// In a service provider or EventServiceProvider
+Event::listen(LinkClicked::class, function (LinkClicked $event) {
+    // Custom analytics tracking
+    Analytics::track('link_clicked', [
+        'link_id' => $event->link->id,
+        'user_agent' => $event->request->userAgent(),
+        'referer' => $event->request->header('referer'),
+    ]);
+});
+
+Event::listen(LinkNotFound::class, function (LinkNotFound $event) {
+    // Custom 404 handling
+    logger('Invalid short code attempted', [
+        'code' => $event->shortCode,
+        'ip' => $event->request->ip(),
+    ]);
+});
+```
+
+#### Service Provider Extensions
+
+Create custom service providers for complex extensions:
+
+```php
+// app/Providers/CustomAnalyticsProvider.php
+class CustomAnalyticsProvider extends ServiceProvider
+{
+    public function boot()
+    {
+        // Register custom analytics providers
+        $this->app->bind('analytics.custom', CustomAnalyticsService::class);
+        
+        // Add custom middleware
+        $this->app['router']->pushMiddlewareToGroup('web', CustomTrackingMiddleware::class);
+        
+        // Register custom Filament widgets
+        Filament::registerWidgets([
+            CustomAnalyticsWidget::class,
+        ]);
+    }
+}
+```
+
+#### Use Cases & Examples
+
+**1. Redirect Homepage to Admin**:
+```php
+// config/shortener.php
+'homepage' => ['redirect_to_admin' => true]
+```
+
+**2. Custom 404 Redirect**:
+```php
+// Redirect to main website when short code not found
+'not_found' => ['redirect_url' => 'https://mycompany.com']
+```
+
+**3. Custom Analytics Integration**:
+```php
+// Listen for clicks and send to external service
+Event::listen(LinkClicked::class, SendToMixpanel::class);
+```
+
+**4. Geo-blocking Middleware**:
+```php
+// Block certain countries from accessing links
+Route::middleware(['geo-block'])->group(function () {
+    Route::get('/{shortCode}', [RedirectController::class, 'redirect']);
+});
+```
+
+This extensibility system provides flexibility for common customizations while maintaining clean core code.
+
+#### File Organization for Custom Code
+
+Users should place their customization code in these locations:
+
+**1. Configuration Changes:**
+```
+config/shortener.php - Main customization settings
+```
+
+**2. Event Listeners:**
+```
+app/Listeners/SendToGoogleAnalytics.php - Custom analytics
+app/Listeners/YourCustomListener.php - Other listeners
+```
+
+**3. Custom Service Provider:**
+```
+app/Providers/CustomizationServiceProvider.php - Main extension point
+bootstrap/providers.php - Uncomment to enable
+```
+
+**4. Custom Middleware:**
+```
+app/Http/Middleware/CustomTracking.php - Request processing
+app/Http/Middleware/GeoBlock.php - Geographic restrictions
+```
+
+**5. Custom Widgets:**
+```
+app/Filament/Widgets/CustomAnalyticsWidget.php - Dashboard extensions
+```
+
+**Setup Process:**
+1. Uncomment `CustomizationServiceProvider` in `bootstrap/providers.php`
+2. Edit the provided example files or create new ones
+3. Register listeners/middleware/widgets in the service provider
+4. No core code modification needed
+
+See `CUSTOMIZATION.md` for detailed examples and step-by-step instructions.
+
+### 5. Analytics Integration
 **Server-side Tracking**
 - Log clicks before redirect
 - Send events to Google Analytics Measurement Protocol
@@ -416,6 +627,93 @@ class LinkShortenerService
 }
 ```
 
+## Link Health Monitoring System
+
+### Overview
+The link health monitoring system automatically checks all destination URLs to ensure they're still accessible, helping maintain link quality at scale.
+
+### Health Status Categories
+- **Unchecked** - Never been checked (gray icon)
+- **Healthy** - HTTP 200-299 responses (green check)
+- **Warning** - HTTP 300-399 or redirected to different domain (yellow triangle)
+- **Error** - HTTP 400-599 or connection failed (red X)
+
+### Smart Scheduling Algorithm
+Links are checked based on their current status:
+- **Healthy links**: Checked weekly
+- **Warning links**: Checked every 3 days
+- **Error links**: Checked daily
+- **New links**: Checked immediately
+
+### Database Schema
+```sql
+-- Health check fields added to links table
+last_checked_at: timestamp nullable
+health_status: enum ['healthy', 'warning', 'error', 'unchecked']
+http_status_code: integer nullable
+health_check_message: string nullable
+final_url: string nullable (tracks redirects)
+```
+
+### Job Queue Implementation
+```php
+// CheckLinkHealthJob.php
+- Processes individual link checks
+- 30-second timeout per check
+- Follows up to 10 redirects
+- Detects domain changes
+- Handles connection errors gracefully
+- Uses separate 'health-checks' queue
+```
+
+### Command Line Interface
+```bash
+# Check links needing it (smart scheduling)
+php artisan links:check-health
+
+# Check with custom batch size
+php artisan links:check-health --batch=100
+
+# Force check all links
+php artisan links:check-health --all
+
+# Check only links with specific status
+php artisan links:check-health --status=error
+```
+
+### Admin Interface Features
+1. **Health Status Column** - Visual icons with colors
+2. **Hover Tooltips** - Shows last check time and message
+3. **Health Filter** - Filter by status (healthy/warning/error)
+4. **Manual Check Action** - Check individual links on demand
+5. **Bulk Check Action** - Check multiple selected links
+6. **Dashboard Widget** - Overview of link health across system
+
+### Queue Worker Configuration
+```bash
+# Process both health checks and click tracking
+php artisan queue:work --queue=health-checks,clicks
+
+# Dedicated health check worker
+php artisan queue:work --queue=health-checks --sleep=3
+```
+
+### Cron Job Setup
+```cron
+# Run health checks daily at 2 AM
+0 2 * * * cd /path/to/project && php artisan links:check-health >> /dev/null 2>&1
+
+# For shared hosting (every 4 hours)
+0 */4 * * * cd /path/to/project && php artisan links:check-health --batch=50 >> /dev/null 2>&1
+```
+
+### Performance Considerations
+- Health checks run in separate queue to not block redirects
+- Batch processing prevents overwhelming external servers
+- Smart scheduling reduces unnecessary checks
+- Failed jobs retry up to 3 times
+- Database indexed on health_status and last_checked_at
+
 ## Performance Considerations
 ```bash
 # Artisan command for updating GeoIP database
@@ -439,6 +737,129 @@ php artisan geoip:update
    - Async processing for click logging
    - Background analytics submission
    - Bulk operations for large datasets
+
+## Queue Processing Configuration
+
+### Overview
+The application uses Laravel's queue system to process click tracking asynchronously, improving redirect performance. Currently configured to use the `database` driver by default.
+
+### Configuration Options
+
+#### 1. Synchronous Processing (Simple, No Setup Required)
+```env
+QUEUE_CONNECTION=sync
+```
+- Jobs execute immediately during the request
+- No additional processes needed
+- Suitable for low-traffic sites
+- Slightly slower redirects due to inline processing
+
+#### 2. Database Queue (Recommended for Most Sites)
+```env
+QUEUE_CONNECTION=database
+```
+- Jobs stored in `jobs` table and processed separately
+- Requires queue worker to be running
+- Better performance for redirects
+- Suitable for medium to high traffic
+
+**Running the Queue Worker:**
+```bash
+# Process jobs from the 'clicks' queue
+php artisan queue:work --queue=clicks --sleep=3 --tries=3
+
+# Or process all queues
+php artisan queue:work
+```
+
+#### 3. Production Setup Options
+
+**Option A: Supervisor (VPS/Dedicated Servers)**
+Create `/etc/supervisor/conf.d/laravel-worker.conf`:
+```ini
+[program:redirection-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/artisan queue:work --queue=clicks --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/path/to/logs/worker.log
+stopwaitsecs=3600
+```
+
+Then:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start redirection-worker:*
+```
+
+**Option B: Systemd Service (Modern Linux Servers)**
+Create `/etc/systemd/system/redirection-queue.service`:
+```ini
+[Unit]
+Description=Redirection Queue Worker
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+Restart=always
+ExecStart=/usr/bin/php /path/to/artisan queue:work --queue=clicks --sleep=3 --tries=3 --max-time=3600
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then:
+```bash
+sudo systemctl enable redirection-queue
+sudo systemctl start redirection-queue
+```
+
+**Option C: Cron Job (Shared Hosting)**
+Add to crontab (runs every minute):
+```cron
+* * * * * cd /path/to/project && php artisan queue:work --queue=clicks --stop-when-empty --max-time=59 >> /dev/null 2>&1
+```
+
+This approach:
+- Runs every minute via cron
+- Processes any pending jobs
+- Stops when queue is empty
+- Maximum runtime of 59 seconds (to avoid overlap)
+- Suitable for shared hosting environments
+
+**Alternative for very limited hosting:**
+```cron
+*/5 * * * * cd /path/to/project && php artisan queue:work --queue=clicks --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
+```
+- Runs every 5 minutes
+- Processes maximum 10 jobs per run
+- Less resource intensive
+
+### Monitoring Queue Health
+
+Check queue status:
+```bash
+php artisan queue:monitor clicks:100
+```
+
+Failed jobs:
+```bash
+php artisan queue:failed
+php artisan queue:retry all
+```
+
+### Performance Impact
+
+- **Sync mode**: ~50-100ms added to redirect time
+- **Queue mode**: ~5-10ms added to redirect time
+- Queue processing happens in background, not affecting user experience
 
 ## Testing Strategy
 1. **Feature Tests**
@@ -483,7 +904,18 @@ This project will provide hands-on experience with Laravel and Filament while bu
 9. **QR Code Generation** - Instant QR codes with PNG/SVG downloads from table and edit views
 10. **Click Analytics** - Detailed geographic, browser, and time-based statistics
 11. **Clean Navigation** - Organized menu with roles under Settings (no separate Shield group)
-12. **Comprehensive Testing** - 55+ tests with 285+ assertions covering all functionality
+12. **Comprehensive Testing** - 70+ tests with 370+ assertions covering all functionality
+13. **Groups API** - Full CRUD operations for link groups via API
+14. **Default Group System** - Automatic group assignment for new links
+15. **Queue Documentation** - Complete guide for async click processing
+16. **Link Health Monitoring** - Automated checking of destination URLs with smart scheduling
+17. **Role-Based Permissions** - Complete Filament Shield integration with proper role assignment
+18. **User Role Management** - Role assignment UI with automatic email verification handling
+19. **Extensibility System** - Configuration-based customization with events and service providers
+20. **Role Setup Command** - `php artisan roles:setup` for automatic permission configuration
+21. **Dashboard Customization** - Reordered widgets with category color badges
+22. **Simple API Endpoint** - YOURLS-compatible `/api/simple` for legacy integrations
+23. **SVG Favicon** - Consistent branding with heroicon link icon
 
 ### Key Technical Insights
 1. **WSL/Windows Integration**: Use Windows cmd.exe for PHP commands when needed
@@ -493,6 +925,9 @@ This project will provide hands-on experience with Laravel and Filament while bu
 5. **Testing**: RefreshDatabase trait essential for clean test isolation
 6. **Filament Customization**: Override vendor translations for navigation changes
 7. **Dynamic Widgets**: Chart widgets support filters, table widgets need different approach
+8. **Permissions Generation**: `shield:generate --all` creates permissions but doesn't assign them
+9. **Role Management**: Super admin bypasses all checks, others need explicit permissions
+10. **Color Contrast**: Calculate readable text colors for any background dynamically
 
 ### Remaining Features from Original Plan
 1. **Export Functionality** - CSV/JSON export for analytics data (Phase 5 remainder)
@@ -524,9 +959,14 @@ This project will provide hands-on experience with Laravel and Filament while bu
 - **Geolocation**: 58.31MB MaxMind database downloaded and functional
 - **Admin URL**: https://redirection.test/admin
 - **User Profile**: Accessible from user menu (top-right dropdown)
-- **Dashboard**: 4 custom widgets with comprehensive analytics
+- **Dashboard**: 5 custom widgets with reorderable layout and dynamic date ranges
 - **QR Codes**: Available in table view and edit screens with PNG/SVG downloads
-- **Test Command**: `php artisan test` (all 55+ tests passing with 285+ assertions)
+- **Test Command**: `php artisan test` (all 75+ tests passing with 400+ assertions)
+- **Role Setup**: `php artisan roles:setup` (automatic permission configuration)
 - **GeoIP Update**: `php artisan geoip:update` (monthly recommended)
-- **API Endpoints**: `/api/links` with full CRUD and statistics
+- **Health Checks**: `php artisan links:check-health` (daily recommended)
+- **API Endpoints**: `/api/links` and `/api/groups` with full CRUD operations
 - **API Authentication**: Multiple methods (Bearer, X-API-Key, query param)
+- **Queue Processing**: Database driver by default, cron job example for shared hosting
+- **Default Queue**: Set `QUEUE_CONNECTION=sync` for simple setup without workers
+- **Health Check Queue**: Separate `health-checks` queue for link monitoring

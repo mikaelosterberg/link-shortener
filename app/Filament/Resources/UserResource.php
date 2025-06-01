@@ -12,6 +12,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
 {
@@ -28,14 +30,47 @@ class UserResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    ->maxLength(255),
+                    
                 Forms\Components\TextInput::make('email')
                     ->email()
-                    ->required(),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
+                    ->required()
+                    ->unique(User::class, 'email', ignoreRecord: true)
+                    ->maxLength(255),
+                    
+                Forms\Components\Select::make('role')
+                    ->label('Role')
+                    ->options(function () {
+                        // Don't show super_admin role unless current user is super_admin
+                        $roles = Role::pluck('name', 'name');
+                        
+                        if (!auth()->user()->hasRole('super_admin')) {
+                            $roles = $roles->except('super_admin');
+                        }
+                        
+                        return $roles;
+                    })
+                    ->required()
+                    ->default('user')
+                    ->helperText('Assign a role to this user'),
+                    
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->required(),
+                    ->required(fn (string $context): bool => $context === 'create')
+                    ->dehydrated(fn ($state) => filled($state))
+                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                    ->helperText(fn (string $context): string => 
+                        $context === 'edit' 
+                            ? 'Leave blank to keep current password' 
+                            : 'Enter a secure password'
+                    ),
+                    
+                Forms\Components\Toggle::make('email_verified')
+                    ->label('Email Verified')
+                    ->default(true)
+                    ->helperText('Mark email as verified for this user')
+                    ->visible(fn () => auth()->user()->hasRole('super_admin')),
             ]);
     }
 
@@ -44,30 +79,68 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('email_verified_at')
-                    ->dateTime()
+                    ->searchable()
                     ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('email')
+                    ->searchable()
+                    ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->label('Role')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'super_admin' => 'danger',
+                        'admin' => 'warning', 
+                        'user' => 'success',
+                        'panel_user' => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => 
+                        ucwords(str_replace('_', ' ', $state))
+                    ),
+                    
+                Tables\Columns\IconColumn::make('email_verified_at')
+                    ->label('Verified')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->getStateUsing(fn (User $record): bool => !is_null($record->email_verified_at)),
+                    
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                    
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('role')
+                    ->relationship('roles', 'name')
+                    ->multiple()
+                    ->preload(),
+                    
+                Tables\Filters\TernaryFilter::make('email_verified_at')
+                    ->label('Email Verified')
+                    ->nullable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (User $record) => 
+                        auth()->user()->hasRole('super_admin') && 
+                        !$record->hasRole('super_admin')
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()->hasRole('super_admin')),
                 ]),
             ]);
     }

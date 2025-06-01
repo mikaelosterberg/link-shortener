@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->favicon(asset('favicon.svg'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -40,6 +41,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 \App\Filament\Widgets\OverviewStatsWidget::class,
+                \App\Filament\Widgets\LinkHealthWidget::class,
                 \App\Filament\Widgets\GeographicStatsWidget::class,
                 \App\Filament\Widgets\ClickTrendsChart::class,
                 \App\Filament\Widgets\TopLinksWidget::class,

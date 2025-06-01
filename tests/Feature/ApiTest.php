@@ -205,4 +205,54 @@ class ApiTest extends TestCase
         $this->apiKey->refresh();
         $this->assertNotNull($this->apiKey->last_used_at);
     }
+
+    public function test_simple_api_format(): void
+    {
+        $linkData = [
+            'url' => 'https://example.com/simple-test',
+            'keyword' => 'simple-test',
+            'title' => 'Simple API Test Page'
+        ];
+
+        $response = $this->postJson('/api/simple', $linkData, [
+            'Authorization' => 'Bearer ' . $this->plainTextKey
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'url' => [
+                    'keyword',
+                    'url',
+                    'title',
+                    'date',
+                    'ip'
+                ],
+                'status',
+                'message',
+                'title',
+                'shorturl',
+                'statusCode'
+            ])
+            ->assertJson([
+                'url' => [
+                    'keyword' => 'simple-test',
+                    'url' => 'https://example.com/simple-test',
+                    'title' => 'Simple API Test Page'
+                ],
+                'status' => 'success',
+                'statusCode' => 200
+            ]);
+
+        // Verify the shorturl field contains the full URL
+        $responseData = $response->json();
+        $this->assertStringContains('simple-test', $responseData['shorturl']);
+
+        // Verify database
+        $this->assertDatabaseHas('links', [
+            'short_code' => 'simple-test',
+            'original_url' => 'https://example.com/simple-test',
+            'created_by' => $this->user->id
+        ]);
+    }
+
 }

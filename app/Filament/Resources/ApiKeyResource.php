@@ -48,8 +48,12 @@ class ApiKeyResource extends Resource
                                 'links:update' => 'Update Links',
                                 'links:delete' => 'Delete Links',
                                 'stats:read' => 'Read Statistics',
+                                'groups:create' => 'Create Groups',
+                                'groups:read' => 'Read Groups',
+                                'groups:update' => 'Update Groups',
+                                'groups:delete' => 'Delete Groups',
                             ])
-                            ->default(['links:create', 'links:read', 'stats:read'])
+                            ->default(['links:create', 'links:read', 'stats:read', 'groups:read'])
                             ->helperText('Select what this API key can do. Leave empty for full access.'),
                     ])->columns(2),
                 Forms\Components\Hidden::make('created_by')
@@ -96,6 +100,10 @@ class ApiKeyResource extends Resource
                                 'links:update' => 'Update',
                                 'links:delete' => 'Delete',
                                 'stats:read' => 'Stats',
+                                'groups:create' => 'G-Create',
+                                'groups:read' => 'G-Read',
+                                'groups:update' => 'G-Update',
+                                'groups:delete' => 'G-Delete',
                             ];
                             
                             $labels = array_map(function($perm) use ($permissionLabels) {

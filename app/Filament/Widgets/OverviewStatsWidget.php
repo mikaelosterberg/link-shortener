@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class OverviewStatsWidget extends BaseWidget
 {
+    protected static ?int $sort = 1;
+    
     protected function getStats(): array
     {
         // Total links

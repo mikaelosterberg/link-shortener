@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 class GeographicStatsWidget extends BaseWidget
 {
+    protected static ?int $sort = 3;
+    
     protected function getStats(): array
     {
         // Get top countries by click count

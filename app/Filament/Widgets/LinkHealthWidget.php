@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Filament\Widgets;
+
+use App\Models\Link;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
+
+class LinkHealthWidget extends BaseWidget
+{
+    protected static ?int $sort = 2;
+    
+    protected int | string | array $columnSpan = 'full';
+
+    protected function getStats(): array
+    {
+        // Get health status counts
+        $healthCounts = Link::selectRaw('health_status, COUNT(*) as count')
+            ->groupBy('health_status')
+            ->pluck('count', 'health_status')
+            ->toArray();
+
+        $healthy = $healthCounts['healthy'] ?? 0;
+        $warning = $healthCounts['warning'] ?? 0;
+        $error = $healthCounts['error'] ?? 0;
+        $unchecked = $healthCounts['unchecked'] ?? 0;
+        $total = array_sum($healthCounts);
+
+        // Get links that need checking
+        $needsChecking = Link::needsHealthCheck()->count();
+
+        // Get last check time
+        $lastChecked = Link::whereNotNull('last_checked_at')
+            ->orderBy('last_checked_at', 'desc')
+            ->first();
+        
+        $lastCheckedText = $lastChecked 
+            ? 'Last check: ' . $lastChecked->last_checked_at->diffForHumans()
+            : 'No checks performed yet';
+
+        // Calculate health percentage
+        $checkedTotal = $healthy + $warning + $error;
+        $healthPercentage = $checkedTotal > 0 
+            ? round(($healthy / $checkedTotal) * 100, 1)
+            : 0;
+
+        return [
+            Stat::make('Healthy Links', $healthy)
+                ->description($healthPercentage . '% of checked links')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color('success')
+                ->chart($this->getHealthTrend('healthy')),
+                
+            Stat::make('Warning Links', $warning)
+                ->description('May have redirects or issues')
+                ->descriptionIcon('heroicon-m-exclamation-triangle')
+                ->color('warning')
+                ->chart($this->getHealthTrend('warning')),
+                
+            Stat::make('Error Links', $error)
+                ->description('Broken or inaccessible')
+                ->descriptionIcon('heroicon-m-x-circle')
+                ->color('danger')
+                ->chart($this->getHealthTrend('error')),
+                
+            Stat::make('Link Health Status', "{$checkedTotal}/{$total}")
+                ->description($lastCheckedText)
+                ->descriptionIcon('heroicon-m-shield-check')
+                ->color($needsChecking > 10 ? 'warning' : 'primary')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer',
+                    'title' => $needsChecking . ' links need checking',
+                ]),
+        ];
+    }
+
+    /**
+     * Get trend data for health status over last 7 days
+     */
+    private function getHealthTrend(string $status): array
+    {
+        // For now, return empty array - could be enhanced to track historical data
+        return [];
+    }
+
+    /**
+     * Poll every 5 minutes to update health status
+     */
+    protected static string | null $pollingInterval = '300s';
+}
