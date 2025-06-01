@@ -935,6 +935,9 @@ This project will provide hands-on experience with Laravel and Filament while bu
 3. **A/B Testing System** - Multiple destination URLs with traffic splitting (Phase 6.1)
 4. **Geo-targeting Rules** - Location-based redirects (Phase 6.2)
 
+### TODO: Documentation Improvements
+1. **Queue System Instructions** - Review README and consolidate queue setup instructions. Currently the health check section shows `php artisan queue:work --queue=health-checks,clicks` but other sections only mention clicks queue. Should standardize to just `php artisan queue:work` without specifying queues, as Laravel will process all queues by default. This simplifies instructions and ensures all job types are processed.
+
 ### Additional Enhancement Ideas
 
 **High Value & Quick Wins:**

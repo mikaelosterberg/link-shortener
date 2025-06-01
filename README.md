@@ -13,10 +13,11 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **QR Code Generation** - Instant QR codes with multiple download formats
 
 ### 📊 Analytics & Tracking
-- **Comprehensive Dashboard** - 4 custom widgets with real-time insights
+- **Comprehensive Dashboard** - 5 custom widgets with real-time insights
 - **Click Trends Chart** - Interactive line graphs with 7/30/90-day filters
 - **Top Links Widget** - Most clicked links with performance metrics
 - **Geographic Analytics** - Country and city tracking using MaxMind GeoLite2
+- **Link Health Status** - Real-time monitoring of destination URL availability
 - **Performance Metrics** - Click rates, averages, and growth tracking
 - **Browser Detection** - Track user agents and devices
 - **Referrer Tracking** - See where clicks are coming from
@@ -65,10 +66,10 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 ## Installation
 
 ### Requirements
-- PHP 8.3+
+- PHP 8.2+
 - Composer
 - MySQL 8.0+ or SQLite 3.8.8+
-- MaxMind GeoLite2 license key (free)
+- MaxMind GeoLite2 license key (free, optional but recommended)
 
 ### Setup
 
@@ -80,7 +81,11 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 
 2. **Install dependencies**
    ```bash
+   # For development
    composer install
+   
+   # For production (smaller footprint)
+   composer install --no-dev --optimize-autoloader
    ```
 
 3. **Environment configuration**
@@ -193,21 +198,35 @@ Visit `http://localhost:8000` to see the homepage and `http://localhost:8000/adm
    QUEUE_CONNECTION=database
    
    # Run the queue worker:
-   php artisan queue:work --queue=clicks
+   php artisan queue:work
    ```
    
    **Option C: Cron Job for Shared Hosting**
    ```bash
    # Add to your crontab:
-   * * * * * cd /path/to/project && php artisan queue:work --queue=clicks --stop-when-empty --max-time=59 >> /dev/null 2>&1
+   * * * * * cd /path/to/project && php artisan queue:work --stop-when-empty --max-time=59 >> /dev/null 2>&1
    ```
    
    See the [Queue Processing](#queue-processing) section for detailed setup instructions.
 
-9. **Run tests (optional)**
+9. **Production optimization (recommended for live servers)**
    ```bash
-   php artisan test
+   # Cache configuration
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   
+   # Optimize Filament
+   php artisan filament:cache-components
+   
+   # Optimize autoloader (if not done during composer install)
+   composer dump-autoload --optimize
    ```
+
+10. **Run tests (optional)**
+    ```bash
+    php artisan test
+    ```
 
 ## Usage
 
@@ -294,10 +313,10 @@ Add to your crontab:
 0 2 * * * cd /path/to/project && php artisan links:check-health >> /dev/null 2>&1
 ```
 
-**Processing Health Check Jobs:**
+**Processing Jobs:**
+The queue worker will automatically process both click tracking and health check jobs:
 ```bash
-# Run queue worker for health checks
-php artisan queue:work --queue=health-checks,clicks
+php artisan queue:work
 ```
 
 ### Role Permission Management
@@ -446,8 +465,8 @@ QUEUE_CONNECTION=database
 
 **Running the Worker:**
 ```bash
-# Process jobs from the 'clicks' queue
-php artisan queue:work --queue=clicks --sleep=3 --tries=3
+# Process all queue jobs (clicks, health checks, etc.)
+php artisan queue:work --sleep=3 --tries=3
 ```
 
 #### 3. Production Deployment Options
@@ -456,7 +475,7 @@ php artisan queue:work --queue=clicks --sleep=3 --tries=3
 ```ini
 [program:redirection-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /path/to/artisan queue:work --queue=clicks --sleep=3 --tries=3 --max-time=3600
+command=php /path/to/artisan queue:work --sleep=3 --tries=3 --max-time=3600
 autostart=true
 autorestart=true
 user=www-data
@@ -475,7 +494,7 @@ After=network.target
 User=www-data
 Group=www-data
 Restart=always
-ExecStart=/usr/bin/php /path/to/artisan queue:work --queue=clicks --sleep=3 --tries=3
+ExecStart=/usr/bin/php /path/to/artisan queue:work --sleep=3 --tries=3
 
 [Install]
 WantedBy=multi-user.target
@@ -484,10 +503,10 @@ WantedBy=multi-user.target
 **Cron Job (Shared Hosting):**
 ```cron
 # Runs every minute
-* * * * * cd /path/to/project && php artisan queue:work --queue=clicks --stop-when-empty --max-time=59 >> /dev/null 2>&1
+* * * * * cd /path/to/project && php artisan queue:work --stop-when-empty --max-time=59 >> /dev/null 2>&1
 
 # Alternative for limited hosting (every 5 minutes, max 10 jobs)
-*/5 * * * * cd /path/to/project && php artisan queue:work --queue=clicks --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
+*/5 * * * * cd /path/to/project && php artisan queue:work --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
 ```
 
 ### Monitoring Queue Health
