@@ -2,7 +2,7 @@
 
 return [
     'shield_resource' => [
-        'should_register_navigation' => true,
+        'should_register_navigation' => false,
         'slug' => 'shield/roles',
         'navigation_sort' => -1,
         'navigation_badge' => true,
@@ -78,6 +78,7 @@ return [
 
         'resources' => [
             'RoleResource', // Exclude role management from permission checks - only super_admin can access
+            'CustomRoleResource', // Also exclude our custom role resource
         ],
     ],
 

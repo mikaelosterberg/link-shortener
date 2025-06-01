@@ -34,7 +34,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->favicon(asset('favicon.svg'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverResources(in: base_path('vendor/bezhansalleh/filament-shield/src/Resources'), for: 'BezhanSalleh\\FilamentShield\\Resources')
+            ->resources([
+                // Resources are auto-discovered from app/Filament/Resources
+            ])
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,

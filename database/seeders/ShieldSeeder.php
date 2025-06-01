@@ -14,32 +14,21 @@ class ShieldSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create super admin role
-        $superAdminRole = Role::firstOrCreate([
-            'name' => 'super_admin',
-            'guard_name' => 'web',
-        ]);
-
-        // Create other basic roles
-        Role::firstOrCreate([
-            'name' => 'admin',
-            'guard_name' => 'web',
-        ]);
-
-        Role::firstOrCreate([
-            'name' => 'user',
-            'guard_name' => 'web',
-        ]);
-
-        Role::firstOrCreate([
-            'name' => 'panel_user',
-            'guard_name' => 'web',
-        ]);
+        $roles = ['super_admin', 'admin', 'user', 'panel_user'];
+        
+        foreach ($roles as $roleName) {
+            Role::firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+            ]);
+            $this->command->info("Created role: {$roleName}");
+        }
 
         // Assign super admin role to first user if exists
         $firstUser = User::first();
         if ($firstUser && !$firstUser->hasRole('super_admin')) {
             $firstUser->assignRole('super_admin');
+            $this->command->info("Assigned super_admin role to: {$firstUser->email}");
         }
     }
 }

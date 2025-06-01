@@ -65,6 +65,8 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 
 ## Installation
 
+**⚡ Quick Setup:** Just 5 commands to get running! The automated installer handles all the complex setup for you.
+
 ### Requirements
 - PHP 8.2+
 - Composer
@@ -103,7 +105,6 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    **For SQLite:**
    ```bash
    touch database/database.sqlite
-   php artisan migrate
    ```
    
    **For MySQL:**
@@ -115,46 +116,30 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    # DB_DATABASE=your_database
    # DB_USERNAME=your_username
    # DB_PASSWORD=your_password
-   
-   php artisan migrate
    ```
 
-5. **Create admin user and set up permissions**
+5. **Run the automated installer**
    
    ```bash
-   # Step 1: Create your admin user
-   php artisan make:filament-user
-   # Enter name, email, and password when prompted
-   
-   # Step 2: Create all roles and assign super_admin to your user
-   php artisan db:seed --class=ShieldSeeder
-   
-   # Verify the seeder worked (optional)
-   php artisan tinker --execute="echo 'Roles: ' . Spatie\Permission\Models\Role::count() . ', Your role: ' . App\Models\User::first()->roles->pluck('name')->join(', ')"
-   
-   # Step 3: Generate permissions and policies
-   php artisan shield:generate --all
-   # When prompted for panel, type: admin
-   
-   # Step 4: Set up default role permissions
-   php artisan roles:setup
-   
-   # Step 5: Clear all caches
-   php artisan optimize:clear
+   php artisan app:install
    ```
    
-   **You can now login!** Your user automatically has super_admin role from the seeder.
+   That's it! The installer will:
+   - ✅ Publish all required configurations and translations
+   - ✅ Run database migrations automatically
+   - ✅ Install Filament Shield with proper navigation grouping
+   - ✅ Create your admin user (you'll be prompted for details)
+   - ✅ Set up all roles and permissions automatically
+   - ✅ Configure the admin panel with "Settings" menu organization
+   - ✅ Clear caches and optimize the application
    
-   **Alternative: Manual configuration (optional):**
-   1. Login to `/admin` with your super admin account
-   2. Navigate to "Settings" → "Roles"
-   3. Click on "admin" role and assign desired permissions
-   4. Click on "user" role and assign basic permissions
-   5. Save each role configuration
+   **You're ready to go!** Login to `/admin` with the credentials you provided.
 
-   **Now you have a fully configured permission system!**
+6. **Access the application**
 
-6. **Configure MaxMind GeoLite2 (Optional but recommended)**
+   Visit your configured domain to see the homepage and `/admin` for the admin panel.
+
+7. **Configure MaxMind GeoLite2 (Optional but recommended)**
    - Sign up for a free account at [MaxMind](https://www.maxmind.com/en/geolite2/signup)
    - Add your license key to the `MAXMIND_LICENSE_KEY` field in `.env`
    - Download the database:
@@ -163,14 +148,7 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
      ```
    - **Note:** Geographic features will gracefully degrade without this setup
 
-7. **Start the application**
-   ```bash
-   php artisan serve
-   ```
-
-Visit `http://localhost:8000` to see the homepage and `http://localhost:8000/admin` for the admin panel.
-
-8. **Configure Queue Processing (Important)**
+8. **Configure Queue Processing (Optional for better performance)**
 
    The application uses queues for async click tracking. Choose one of these options:
 
