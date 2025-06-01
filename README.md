@@ -52,7 +52,7 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 ## Installation
 
 ### Requirements
-- PHP 8.2+
+- PHP 8.3+
 - Composer
 - SQLite (or MySQL/PostgreSQL)
 - MaxMind GeoLite2 license key (free)

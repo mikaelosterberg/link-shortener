@@ -478,11 +478,12 @@ This project will provide hands-on experience with Laravel and Filament while bu
 4. **Geographic Analytics** - MaxMind GeoLite2 integration working perfectly
 5. **Complete REST API** - All CRUD endpoints with permission-based authentication
 6. **API Key System** - User-friendly key management with visible keys
-7. **Advanced Dashboard** - 4 custom widgets with charts, trends, and top performers
+7. **Advanced Dashboard** - 4 custom widgets with dynamic titles and date filters
 8. **User Profile Management** - Password changes and preferences from user menu
 9. **QR Code Generation** - Instant QR codes with PNG/SVG downloads from table and edit views
 10. **Click Analytics** - Detailed geographic, browser, and time-based statistics
-11. **Comprehensive Testing** - 55+ tests with 285+ assertions covering all functionality
+11. **Clean Navigation** - Organized menu with roles under Settings (no separate Shield group)
+12. **Comprehensive Testing** - 55+ tests with 285+ assertions covering all functionality
 
 ### Key Technical Insights
 1. **WSL/Windows Integration**: Use Windows cmd.exe for PHP commands when needed
@@ -490,6 +491,8 @@ This project will provide hands-on experience with Laravel and Filament while bu
 3. **Filament Casts**: JSON columns need proper model casts for complex data
 4. **Performance**: File caching + raw SQL for redirects = sub-100ms response times
 5. **Testing**: RefreshDatabase trait essential for clean test isolation
+6. **Filament Customization**: Override vendor translations for navigation changes
+7. **Dynamic Widgets**: Chart widgets support filters, table widgets need different approach
 
 ### Remaining Features from Original Plan
 1. **Export Functionality** - CSV/JSON export for analytics data (Phase 5 remainder)
