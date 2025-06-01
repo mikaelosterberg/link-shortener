@@ -164,13 +164,13 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    QUEUE_CONNECTION=database
    
    # Run the queue worker:
-   php artisan queue:work
+   php artisan queue:work --queue=default,clicks,health-checks
    ```
    
    **Option C: Cron Job for Shared Hosting**
    ```bash
    # Add to your crontab:
-   * * * * * cd /path/to/project && php artisan queue:work --stop-when-empty --max-time=59 >> /dev/null 2>&1
+   * * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-time=59 >> /dev/null 2>&1
    ```
    
    See the [Queue Processing](#queue-processing) section for detailed setup instructions.
@@ -282,7 +282,7 @@ Add to your crontab:
 **Processing Jobs:**
 The queue worker will automatically process both click tracking and health check jobs:
 ```bash
-php artisan queue:work
+php artisan queue:work --queue=default,clicks,health-checks
 ```
 
 ### Role Permission Management
@@ -432,7 +432,7 @@ QUEUE_CONNECTION=database
 **Running the Worker:**
 ```bash
 # Process all queue jobs (clicks, health checks, etc.)
-php artisan queue:work --sleep=3 --tries=3
+php artisan queue:work --queue=default,clicks,health-checks --sleep=3 --tries=3
 ```
 
 #### 3. Production Deployment Options
@@ -441,7 +441,7 @@ php artisan queue:work --sleep=3 --tries=3
 ```ini
 [program:redirection-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /path/to/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+command=php /path/to/artisan queue:work --queue=default,clicks,health-checks --sleep=3 --tries=3 --max-time=3600
 autostart=true
 autorestart=true
 user=www-data
@@ -460,7 +460,7 @@ After=network.target
 User=www-data
 Group=www-data
 Restart=always
-ExecStart=/usr/bin/php /path/to/artisan queue:work --sleep=3 --tries=3
+ExecStart=/usr/bin/php /path/to/artisan queue:work --queue=default,clicks,health-checks --sleep=3 --tries=3
 
 [Install]
 WantedBy=multi-user.target
@@ -468,11 +468,14 @@ WantedBy=multi-user.target
 
 **Cron Job (Shared Hosting):**
 ```cron
-# Runs every minute
-* * * * * cd /path/to/project && php artisan queue:work --stop-when-empty --max-time=59 >> /dev/null 2>&1
+# Runs every minute (processes all queues)
+* * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-time=59 >> /dev/null 2>&1
 
 # Alternative for limited hosting (every 5 minutes, max 10 jobs)
-*/5 * * * * cd /path/to/project && php artisan queue:work --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
+*/5 * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
+
+# ISPConfig format (adjust path as needed)
+* * * * * php /var/www/clients/client1/web31/web/artisan queue:work --queue=default,clicks,health-checks --tries=3 --stop-when-empty
 ```
 
 ### Monitoring Queue Health
