@@ -475,7 +475,7 @@ WantedBy=multi-user.target
 */5 * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
 
 # ISPConfig format (adjust path as needed)
-* * * * * php /var/www/clients/client1/web31/web/artisan queue:work --queue=default,clicks,health-checks --tries=3 --stop-when-empty
+* * * * * php /var/www/clients/client1/web1/web/artisan queue:work --queue=default,clicks,health-checks --tries=3 --stop-when-empty
 ```
 
 ### Monitoring Queue Health
