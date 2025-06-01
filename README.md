@@ -119,37 +119,31 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    php artisan migrate
    ```
 
-5. **Set up permissions and create users**
+5. **Create admin user and set up permissions**
    
-   **Create the first super admin user:**
    ```bash
+   # Step 1: Create your admin user
    php artisan make:filament-user
-   ```
-   Follow the prompts to enter name, email, and password.
+   # Enter name, email, and password when prompted
    
-   **Set up roles and permissions:**
-   ```bash
-   # Install Shield properly
-   php artisan shield:install --fresh
+   # Step 2: Create all roles and assign super_admin to your user
+   php artisan db:seed --class=ShieldSeeder
    
-   # When prompted:
-   # - Select "admin" panel
-   # - For super admin user, enter the email of the user you just created
+   # Verify the seeder worked (optional)
+   php artisan tinker --execute="echo 'Roles: ' . Spatie\Permission\Models\Role::count() . ', Your role: ' . App\Models\User::first()->roles->pluck('name')->join(', ')"
    
-   # This command will:
-   # - Create all roles (super_admin, admin, user, panel_user)
-   # - Generate all permissions and policies
-   # - Assign super_admin role to your user
-   ```
+   # Step 3: Generate permissions and policies
+   php artisan shield:generate --all
+   # When prompted for panel, type: admin
    
-   **Set up default role permissions:**
-   ```bash
+   # Step 4: Set up default role permissions
    php artisan roles:setup
+   
+   # Step 5: Clear all caches
+   php artisan optimize:clear
    ```
-   This automatically configures logical defaults:
-   - **admin**: Full link management + dashboard access
-   - **user**: Basic link management + limited dashboard  
-   - **panel_user**: View-only access to own data
+   
+   **You can now login!** Your user automatically has super_admin role from the seeder.
    
    **Alternative: Manual configuration (optional):**
    1. Login to `/admin` with your super admin account

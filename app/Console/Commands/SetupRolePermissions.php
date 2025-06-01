@@ -73,8 +73,9 @@ class SetupRolePermissions extends Command
      */
     private function setupRolePermissions(string $roleName): void
     {
-        $role = Role::findByName($roleName);
-        if (!$role) {
+        try {
+            $role = Role::findByName($roleName);
+        } catch (\Exception $e) {
             $this->warn("⚠️  Role '{$roleName}' not found, skipping...");
             return;
         }
