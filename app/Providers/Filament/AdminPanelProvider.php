@@ -34,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->favicon(asset('favicon.svg'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            ->discoverResources(in: base_path('vendor/bezhansalleh/filament-shield/src/Resources'), for: 'BezhanSalleh\\FilamentShield\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,
@@ -66,6 +67,23 @@ class AdminPanelProvider extends PanelProvider
                     ->url('/admin/user-profile')
                     ->icon('heroicon-o-user-circle'),
             ])
-            ->plugin(FilamentShieldPlugin::make());
+            ->plugin(
+                FilamentShieldPlugin::make()
+                    ->gridColumns([
+                        'default' => 1,
+                        'sm' => 2,
+                        'lg' => 3
+                    ])
+                    ->sectionColumnSpan(1)
+                    ->checkboxListColumns([
+                        'default' => 1,
+                        'sm' => 2,
+                        'lg' => 4,
+                    ])
+                    ->resourceCheckboxListColumns([
+                        'default' => 1,
+                        'sm' => 2,
+                    ])
+            );
     }
 }

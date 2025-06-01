@@ -129,13 +129,18 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    
    **Set up roles and permissions:**
    ```bash
-   # Create the roles (super_admin, admin, user, panel_user)
-   php artisan db:seed --class=ShieldSeeder
+   # Install Shield properly
+   php artisan shield:install --fresh
    
-   # Generate permissions and policies
-   php artisan shield:generate --all
+   # When prompted:
+   # - Select "admin" panel
+   # - For super admin user, enter the email of the user you just created
+   
+   # This command will:
+   # - Create all roles (super_admin, admin, user, panel_user)
+   # - Generate all permissions and policies
+   # - Assign super_admin role to your user
    ```
-   When prompted, select the "admin" panel.
    
    **Set up default role permissions:**
    ```bash
