@@ -68,7 +68,7 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 **⚡ Quick Setup:** Just 5 commands to get running! The automated installer handles all the complex setup for you.
 
 ### Requirements
-- PHP 8.2+
+- PHP 8.3+
 - Composer
 - MySQL 8.0+ or SQLite 3.8.8+
 - MaxMind GeoLite2 license key (free, optional but recommended)
