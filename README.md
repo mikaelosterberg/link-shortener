@@ -121,33 +121,22 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 
 5. **Set up permissions and create users**
    
-   **Generate permissions and policies:**
-   ```bash
-   php artisan shield:generate --all
-   ```
-   
    **Create the first super admin user:**
    ```bash
    php artisan make:filament-user
    ```
    Follow the prompts to enter name, email, and password.
    
-   **Assign super admin role:**
+   **Set up roles and permissions:**
    ```bash
-   php artisan tinker
-   ```
-   Then in the tinker console:
-   ```php
-   $user = \App\Models\User::where('email', 'your-email@example.com')->first();
-   $user->assignRole('super_admin');
-   exit
-   ```
+   # Create the roles (super_admin, admin, user, panel_user)
+   php artisan db:seed --class=ShieldSeeder
    
-   **Alternative one-line setup:**
-   ```bash
-   php artisan tinker --execute="App\Models\User::where('email', 'your-email@example.com')->first()->assignRole('super_admin')"
+   # Generate permissions and policies
+   php artisan shield:generate --all
    ```
-
+   When prompted, select the "admin" panel.
+   
    **Set up default role permissions:**
    ```bash
    php artisan roles:setup

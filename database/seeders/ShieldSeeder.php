@@ -31,9 +31,14 @@ class ShieldSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        Role::firstOrCreate([
+            'name' => 'panel_user',
+            'guard_name' => 'web',
+        ]);
+
         // Assign super admin role to first user if exists
         $firstUser = User::first();
-        if ($firstUser) {
+        if ($firstUser && !$firstUser->hasRole('super_admin')) {
             $firstUser->assignRole('super_admin');
         }
     }
