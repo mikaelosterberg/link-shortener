@@ -72,18 +72,26 @@ class CheckLinkHealthJob implements ShouldQueue
 
         } catch (\Exception $e) {
             // Handle connection errors, timeouts, etc.
+            $errorMessage = $e->getMessage();
+            
+            // Check if this is a redirect loop/limit issue
+            $isRedirectIssue = str_contains($errorMessage, 'Will not follow more than') || 
+                               str_contains($errorMessage, 'redirect') ||
+                               str_contains($errorMessage, 'Too many redirects');
+            
             $this->link->update([
                 'last_checked_at' => now(),
-                'health_status' => 'error',
+                'health_status' => $isRedirectIssue ? 'warning' : 'error',
                 'http_status_code' => null,
-                'health_check_message' => 'Failed to connect: ' . $e->getMessage(),
+                'health_check_message' => 'Failed to connect: ' . $errorMessage,
                 'final_url' => null,
             ]);
 
             Log::warning('Link health check failed', [
                 'link_id' => $this->link->id,
                 'url' => $this->link->original_url,
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
+                'is_redirect_issue' => $isRedirectIssue,
             ]);
         }
     }
