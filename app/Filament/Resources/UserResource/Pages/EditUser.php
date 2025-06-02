@@ -57,4 +57,9 @@ class EditUser extends EditRecord
             $user->syncRoles($newRoles);
         }
     }
+    
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

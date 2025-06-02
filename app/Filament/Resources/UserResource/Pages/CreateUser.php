@@ -25,4 +25,9 @@ class CreateUser extends CreateRecord
             $user->syncRoles($formData['roles']);
         }
     }
+    
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

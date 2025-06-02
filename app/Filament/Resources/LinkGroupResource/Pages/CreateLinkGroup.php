@@ -29,5 +29,10 @@ class CreateLinkGroup extends CreateRecord
         }
     }
     
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+    
     private bool $isSettingAsDefault = false;
 }
