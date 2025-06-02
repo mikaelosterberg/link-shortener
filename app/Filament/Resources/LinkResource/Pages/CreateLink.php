@@ -23,6 +23,14 @@ class CreateLink extends CreateRecord
             $data['created_by'] = auth()->id();
         }
         
+        // If no group is selected, use the default group if one exists
+        if (empty($data['group_id'])) {
+            $defaultGroup = \App\Models\LinkGroup::where('is_default', true)->first();
+            if ($defaultGroup) {
+                $data['group_id'] = $defaultGroup->id;
+            }
+        }
+        
         return $data;
     }
     

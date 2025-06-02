@@ -47,6 +47,12 @@ class LinkResource extends Resource
                             ->relationship('group', 'name')
                             ->searchable()
                             ->preload()
+                            ->helperText(function () {
+                                $defaultGroup = \App\Models\LinkGroup::where('is_default', true)->first();
+                                return $defaultGroup 
+                                    ? "Leave empty to use default: {$defaultGroup->name}" 
+                                    : null;
+                            })
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
                                     ->required(),
