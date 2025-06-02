@@ -24,30 +24,15 @@ class EditUser extends EditRecord
     
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Fill the role field with user's current role
+        // Fill the roles field with user's current roles
         $user = $this->record;
-        $data['role'] = $user->roles->first()?->name ?? 'user';
-        
-        // Fill email verified toggle
-        $data['email_verified'] = !is_null($user->email_verified_at);
+        $data['roles'] = $user->roles->pluck('name')->toArray();
         
         return $data;
     }
     
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // Handle email verification toggle
-        if (isset($data['email_verified'])) {
-            if ($data['email_verified'] && is_null($this->record->email_verified_at)) {
-                $data['email_verified_at'] = now();
-            } elseif (!$data['email_verified'] && !is_null($this->record->email_verified_at)) {
-                $data['email_verified_at'] = null;
-            }
-        }
-        
-        // Remove the email_verified toggle from the actual data
-        unset($data['email_verified']);
-        
         return $data;
     }
     
@@ -57,20 +42,19 @@ class EditUser extends EditRecord
         $formData = $this->form->getState();
         
         // Handle role changes
-        if (isset($formData['role'])) {
-            $currentRole = $user->roles->first()?->name;
-            $newRole = $formData['role'];
+        if (isset($formData['roles'])) {
+            $currentRoles = $user->roles->pluck('name')->toArray();
+            $newRoles = $formData['roles'];
             
-            // Only change role if it's different
-            if ($currentRole !== $newRole) {
-                // Don't allow removing super_admin role from self
-                if ($currentRole === 'super_admin' && auth()->id() === $user->id) {
-                    return;
-                }
-                
-                // Remove all current roles and assign new one
-                $user->syncRoles([$newRole]);
+            // Don't allow removing super_admin role from self
+            if (auth()->id() === $user->id && 
+                in_array('super_admin', $currentRoles) && 
+                !in_array('super_admin', $newRoles)) {
+                return;
             }
+            
+            // Sync roles
+            $user->syncRoles($newRoles);
         }
     }
 }

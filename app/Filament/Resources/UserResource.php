@@ -39,8 +39,9 @@ class UserResource extends Resource
                     ->unique(User::class, 'email', ignoreRecord: true)
                     ->maxLength(255),
                     
-                Forms\Components\Select::make('role')
-                    ->label('Role')
+                Forms\Components\Select::make('roles')
+                    ->label('Roles')
+                    ->multiple()
                     ->options(function () {
                         // Don't show super_admin role unless current user is super_admin
                         $roles = Role::pluck('name', 'name');
@@ -52,8 +53,9 @@ class UserResource extends Resource
                         return $roles;
                     })
                     ->required()
-                    ->default('user')
-                    ->helperText('Assign a role to this user'),
+                    ->default(['user'])
+                    ->helperText('Assign one or more roles to this user')
+                    ->preload(),
                     
                 Forms\Components\TextInput::make('password')
                     ->password()
@@ -65,12 +67,6 @@ class UserResource extends Resource
                             ? 'Leave blank to keep current password' 
                             : 'Enter a secure password'
                     ),
-                    
-                Forms\Components\Toggle::make('email_verified')
-                    ->label('Email Verified')
-                    ->default(true)
-                    ->helperText('Mark email as verified for this user')
-                    ->visible(fn () => auth()->user()->hasRole('super_admin')),
             ]);
     }
 

@@ -19,9 +19,18 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Support\Assets\Css;
+use Filament\Support\Facades\FilamentAsset;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        FilamentAsset::register([
+            Css::make('custom-theme', \Illuminate\Support\Facades\Vite::asset('resources/css/app.css')),
+        ]);
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel

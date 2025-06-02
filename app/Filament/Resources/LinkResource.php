@@ -100,13 +100,18 @@ class LinkResource extends Resource
                     ->label('QR')
                     ->getStateUsing(fn ($record) => route('qr.display', ['link' => $record->id, 'size' => 40]))
                     ->size(40)
-                    ->tooltip('Click to view QR code'),
+                    ->extraImgAttributes(['class' => 'aspect-square'])
+                    ->tooltip('Use QR Code button to view full size'),
                 Tables\Columns\TextColumn::make('short_code')
                     ->label('Short URL')
                     ->searchable()
                     ->copyable()
+                    ->copyableState(fn ($record) => url($record->short_code))
+                    ->copyMessage('Short URL copied!')
+                    ->copyMessageDuration(1500)
                     ->formatStateUsing(fn ($state) => url($state))
-                    ->description(fn ($record) => $record->custom_slug ? 'Custom' : 'Generated'),
+                    ->description(fn ($record) => $record->custom_slug ? 'Custom' : 'Generated')
+                    ->tooltip('Click to copy'),
                 Tables\Columns\TextColumn::make('original_url')
                     ->label('Destination')
                     ->limit(40)
@@ -187,28 +192,13 @@ class LinkResource extends Resource
                     ->label('Expired'),
             ])
             ->actions([
-                Tables\Actions\Action::make('copy_url')
-                    ->label('Copy')
-                    ->icon('heroicon-o-clipboard')
-                    ->action(fn ($record) => null)
-                    ->tooltip('Copy short URL'),
                 Tables\Actions\Action::make('qr_code')
                     ->label('QR Code')
                     ->icon('heroicon-o-qr-code')
                     ->modalHeading('QR Code')
                     ->modalContent(fn ($record) => view('filament.modals.qr-code', ['link' => $record]))
-                    ->modalActions([
-                        Tables\Actions\Action::make('download_png')
-                            ->label('Download PNG')
-                            ->icon('heroicon-o-arrow-down-tray')
-                            ->url(fn ($record) => route('qr.download', ['link' => $record->id, 'format' => 'png']))
-                            ->openUrlInNewTab(),
-                        Tables\Actions\Action::make('download_svg')
-                            ->label('Download SVG')
-                            ->icon('heroicon-o-arrow-down-tray')
-                            ->url(fn ($record) => route('qr.download', ['link' => $record->id, 'format' => 'svg']))
-                            ->openUrlInNewTab(),
-                    ])
+                    ->modalSubmitAction(false)
+                    ->modalCancelAction(false)
                     ->tooltip('View QR code'),
                 Tables\Actions\Action::make('view_stats')
                     ->label('Stats')
