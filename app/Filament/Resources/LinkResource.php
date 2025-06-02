@@ -102,12 +102,6 @@ class LinkResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('qr_code')
-                    ->label('QR')
-                    ->getStateUsing(fn ($record) => route('qr.display', ['link' => $record->id, 'size' => 40]))
-                    ->size(40)
-                    ->extraImgAttributes(['class' => 'aspect-square'])
-                    ->tooltip('Use QR Code button to view full size'),
                 Tables\Columns\TextColumn::make('short_code')
                     ->label('Short URL')
                     ->searchable()
@@ -161,18 +155,18 @@ class LinkResource extends Resource
                             $record->last_checked_at->diffForHumans()
                         );
                     }),
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Active'),
                 Tables\Columns\TextColumn::make('expires_at')
                     ->label('Expires')
                     ->dateTime('M j, Y')
                     ->placeholder('Never')
-                    ->color(fn ($record) => $record->isExpired() ? 'danger' : null),
+                    ->color(fn ($record) => $record->isExpired() ? 'danger' : null)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By')
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime('M j, Y')
@@ -228,6 +222,34 @@ class LinkResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('activate')
+                        ->label('Activate')
+                        ->icon('heroicon-o-check-circle')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                $record->update(['is_active' => true]);
+                            }
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Activate Links')
+                        ->modalDescription('This will activate the selected links, making them accessible.')
+                        ->modalSubmitActionLabel('Activate')
+                        ->deselectRecordsAfterCompletion()
+                        ->color('success'),
+                    Tables\Actions\BulkAction::make('deactivate')
+                        ->label('Deactivate')
+                        ->icon('heroicon-o-x-circle')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                $record->update(['is_active' => false]);
+                            }
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Deactivate Links')
+                        ->modalDescription('This will deactivate the selected links. They will return 404 when accessed.')
+                        ->modalSubmitActionLabel('Deactivate')
+                        ->deselectRecordsAfterCompletion()
+                        ->color('danger'),
                     Tables\Actions\BulkAction::make('check_health')
                         ->label('Check Health')
                         ->icon('heroicon-o-arrow-path')
