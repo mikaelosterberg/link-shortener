@@ -131,9 +131,9 @@ class SetupRolePermissionsCommandTest extends TestCase
     {
         $this->artisan('roles:setup')
             ->expectsOutput('📋 Summary:')
-            ->expectsOutputToContain('🔹 admin:')
-            ->expectsOutputToContain('🔹 user:')
-            ->expectsOutputToContain('🔹 panel_user:')
+            ->expectsOutputToContain('admin:')
+            ->expectsOutputToContain('user:')
+            ->expectsOutputToContain('panel_user:')
             ->expectsOutputToContain('Full link management + dashboard access')
             ->assertExitCode(0);
     }

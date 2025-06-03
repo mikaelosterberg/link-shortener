@@ -192,6 +192,7 @@ class LinkResource extends Resource
                     ->label('Expired'),
             ])
             ->actions([
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('qr_code')
                     ->label('QR Code')
                     ->icon('heroicon-o-qr-code')
@@ -217,7 +218,6 @@ class LinkResource extends Resource
                     ->modalDescription('This will check if the destination URL is still accessible.')
                     ->modalSubmitActionLabel('Check Now')
                     ->successNotificationTitle('Health check queued'),
-                Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

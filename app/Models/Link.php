@@ -113,27 +113,29 @@ class Link extends Model
 
     /**
      * Scope for links that need health checking
+     * Only includes active links by default
      */
     public function scopeNeedsHealthCheck(Builder $query): Builder
     {
-        return $query->where(function ($q) {
-            // Never checked
-            $q->whereNull('last_checked_at')
-              // Or healthy links older than 7 days
-              ->orWhere(function ($q2) {
-                  $q2->where('health_status', 'healthy')
-                     ->where('last_checked_at', '<', now()->subDays(7));
-              })
-              // Or warning links older than 3 days
-              ->orWhere(function ($q2) {
-                  $q2->where('health_status', 'warning')
-                     ->where('last_checked_at', '<', now()->subDays(3));
-              })
-              // Or error links older than 1 day
-              ->orWhere(function ($q2) {
-                  $q2->where('health_status', 'error')
-                     ->where('last_checked_at', '<', now()->subDay());
-              });
-        });
+        return $query->where('is_active', true)
+            ->where(function ($q) {
+                // Never checked
+                $q->whereNull('last_checked_at')
+                  // Or healthy links older than 7 days
+                  ->orWhere(function ($q2) {
+                      $q2->where('health_status', 'healthy')
+                         ->where('last_checked_at', '<', now()->subDays(7));
+                  })
+                  // Or warning links older than 3 days
+                  ->orWhere(function ($q2) {
+                      $q2->where('health_status', 'warning')
+                         ->where('last_checked_at', '<', now()->subDays(3));
+                  })
+                  // Or error links older than 1 day
+                  ->orWhere(function ($q2) {
+                      $q2->where('health_status', 'error')
+                         ->where('last_checked_at', '<', now()->subDay());
+                  });
+            });
     }
 }

@@ -14,8 +14,9 @@ class LinkHealthWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Get health status counts
+        // Get health status counts for ACTIVE links only
         $healthCounts = Link::selectRaw('health_status, COUNT(*) as count')
+            ->where('is_active', true)
             ->groupBy('health_status')
             ->pluck('count', 'health_status')
             ->toArray();
@@ -26,7 +27,7 @@ class LinkHealthWidget extends BaseWidget
         $unchecked = $healthCounts['unchecked'] ?? 0;
         $total = array_sum($healthCounts);
 
-        // Get links that need checking
+        // Get links that need checking (already filtered for active in scope)
         $needsChecking = Link::needsHealthCheck()->count();
 
         // Get last check time

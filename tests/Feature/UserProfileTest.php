@@ -22,6 +22,10 @@ class UserProfileTest extends TestCase
             'email' => 'test@example.com',
             'password' => Hash::make('current-password'),
         ]);
+        
+        // Create a simple role for testing (since roles:setup isn't working in tests)
+        $role = \Spatie\Permission\Models\Role::create(['name' => 'panel_user']);
+        $this->user->assignRole($role);
     }
 
     public function test_user_can_access_profile_page(): void

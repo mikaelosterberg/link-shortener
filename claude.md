@@ -18,7 +18,7 @@ A link shortening/redirection service built with Laravel and Filament to learn t
 - **SQLite Extensions**: Required enabling `extension=pdo_sqlite` and `extension=sqlite3` in php.ini
 - **Laragon Restart**: Needed after php.ini changes
 - **File permissions**: No issues encountered with shared directories
-- **Testing**: All 44 tests pass successfully in WSL environment
+- **Testing**: 93+ tests pass successfully in WSL environment (101 total tests)
 
 ## Technology Stack
 - **Backend**: Laravel 12.x (latest)
@@ -27,7 +27,7 @@ A link shortening/redirection service built with Laravel and Filament to learn t
 - **Database**: SQLite
 - **Cache**: File-based (development), Redis (production)
 - **API Authentication**: Laravel Sanctum
-- **Analytics**: Server-side Google Analytics (Measurement Protocol)
+- **Analytics**: Built-in dashboard with geographic tracking (Google Analytics planned)
 - **Geolocation**: MaxMind GeoLite2 (optional, local database)
 
 ## Database Schema
@@ -38,12 +38,13 @@ A link shortening/redirection service built with Laravel and Filament to learn t
 users: id, name, email, password, role, timestamps
 
 -- Link groups/categories
-link_groups: id, name, description, color, timestamps
+link_groups: id, name, description, color, is_default, timestamps
 
 -- Main links table
 links: id, short_code, original_url, group_id, redirect_type, 
        is_active, expires_at, created_by, click_count, 
-       custom_slug, timestamps
+       custom_slug, last_checked_at, health_status, 
+       http_status_code, health_check_message, final_url, timestamps
 
 -- Click tracking (with optional geolocation)
 clicks: id, link_id, ip_address, user_agent, referer, 
@@ -71,25 +72,32 @@ geo_rules: id, link_id, country_codes, redirect_url,
 
 ### 1. Admin Panel (Filament)
 **User Management** (Super Admin only)
-- Create/edit/delete admin users with role assignment
+- Create/edit/delete admin users with multiple role assignment
 - Role-based access control with 4 roles:
   - `super_admin` - Unrestricted access to everything
   - `admin` - Limited permissions (assignable by super admin)
   - `user` - Basic role for regular users
   - `panel_user` - Basic panel access
-- Automatic email verification handling
+- Multi-select role editing (users can have multiple roles)
 - Role-based UI visibility (super admins see all options)
 - Security controls (can't delete self or other super admins)
+- User profile page accessible from user menu
 
-**Link Management** (Standard Laravel/Filament)
+**Link Management** (Enhanced Filament Interface)
 - CRUD operations using Filament resources and Eloquent
-- Bulk operations via Filament actions
-- Link grouping/categorization
+- Bulk operations: activate, deactivate, health check, delete
+- Link grouping/categorization with default group assignment
 - Click statistics dashboard
+- Toggle column for instant activate/deactivate
+- QR code generation with modal and edit page views
+- Link health monitoring with visual status indicators
+- Improved action ordering (Edit first, then QR, Stats, Health, Delete)
 
 **Groups/Categories**
 - Organize links by purpose/campaign
 - Color coding for visual organization
+- Default group functionality (auto-assignment for new links)
+- Group management via admin panel and API
 
 ### 2. Fast Redirection System
 **Performance Requirements**
@@ -894,28 +902,33 @@ This project will provide hands-on experience with Laravel and Filament while bu
 
 ### Completed Features (Working in Production)
 1. **Core Redirect System** - Fast, cached redirects with rate limiting
-2. **Admin Panel** - Complete Filament interface with user management
-3. **Link Management** - CRUD operations, categories, custom slugs, expiration
+2. **Admin Panel** - Complete Filament interface with enhanced user management
+3. **Link Management** - CRUD operations, categories, custom slugs, expiration, health monitoring
 4. **Geographic Analytics** - MaxMind GeoLite2 integration working perfectly
 5. **Complete REST API** - All CRUD endpoints with permission-based authentication
 6. **API Key System** - User-friendly key management with visible keys
-7. **Advanced Dashboard** - 4 custom widgets with dynamic titles and date filters
+7. **Advanced Dashboard** - 5 custom widgets with dynamic titles and date filters
 8. **User Profile Management** - Password changes and preferences from user menu
-9. **QR Code Generation** - Instant QR codes with PNG/SVG downloads from table and edit views
+9. **QR Code Generation** - Enhanced QR codes with Filament-styled buttons in modals and edit views
 10. **Click Analytics** - Detailed geographic, browser, and time-based statistics
 11. **Clean Navigation** - Organized menu with roles under Settings (no separate Shield group)
-12. **Comprehensive Testing** - 70+ tests with 370+ assertions covering all functionality
+12. **Comprehensive Testing** - 101 tests with 93+ passing covering all functionality
 13. **Groups API** - Full CRUD operations for link groups via API
-14. **Default Group System** - Automatic group assignment for new links
+14. **Default Group System** - Automatic group assignment for new links (admin & API consistent)
 15. **Queue Documentation** - Complete guide for async click processing
-16. **Link Health Monitoring** - Automated checking of destination URLs with smart scheduling
-17. **Role-Based Permissions** - Complete Filament Shield integration with proper role assignment
-18. **User Role Management** - Role assignment UI with automatic email verification handling
+16. **Link Health Monitoring** - Smart health checks with redirect loop detection (warnings vs errors)
+17. **Role-Based Permissions** - Complete Filament Shield integration with multi-role assignment
+18. **User Role Management** - Multi-select role editing UI (users can have multiple roles)
 19. **Extensibility System** - Configuration-based customization with events and service providers
 20. **Role Setup Command** - `php artisan roles:setup` for automatic permission configuration
 21. **Dashboard Customization** - Reordered widgets with category color badges
 22. **Simple API Endpoint** - YOURLS-compatible `/api/simple` for legacy integrations
 23. **SVG Favicon** - Consistent branding with heroicon link icon
+24. **Enhanced Link Table** - Toggle columns, bulk actions (activate/deactivate), improved UX
+25. **Improved Actions** - Edit action first, proper QR modal, streamlined interface
+26. **Active Link Monitoring** - Health checks only monitor active links (no false alarms)
+27. **Redirect After Save** - All edit/create forms redirect to list for better workflow
+28. **Custom CSS Integration** - Proper Tailwind utilities without preflight conflicts
 
 ### Key Technical Insights
 1. **WSL/Windows Integration**: Use Windows cmd.exe for PHP commands when needed
@@ -928,6 +941,11 @@ This project will provide hands-on experience with Laravel and Filament while bu
 8. **Permissions Generation**: `shield:generate --all` creates permissions but doesn't assign them
 9. **Role Management**: Super admin bypasses all checks, others need explicit permissions
 10. **Color Contrast**: Calculate readable text colors for any background dynamically
+11. **Tailwind Integration**: Use utilities-only import to avoid conflicts with Filament's base styles
+12. **Toggle Columns**: Use ToggleColumn instead of IconColumn for interactive table elements
+13. **Filament Components**: Use `<x-filament::button>` for consistent styling in custom views
+14. **Health Check Categorization**: Distinguish redirect loops (warnings) from connection errors
+15. **Multi-role Support**: Use syncRoles() for proper multiple role assignment
 
 ### Remaining Features from Original Plan
 1. **Export Functionality** - CSV/JSON export for analytics data (Phase 5 remainder)
@@ -964,7 +982,7 @@ This project will provide hands-on experience with Laravel and Filament while bu
 - **User Profile**: Accessible from user menu (top-right dropdown)
 - **Dashboard**: 5 custom widgets with reorderable layout and dynamic date ranges
 - **QR Codes**: Available in table view and edit screens with PNG/SVG downloads
-- **Test Command**: `php artisan test` (all 75+ tests passing with 400+ assertions)
+- **Test Command**: `php artisan test` (93+ of 101 tests passing with 400+ assertions)
 - **Role Setup**: `php artisan roles:setup` (automatic permission configuration)
 - **GeoIP Update**: `php artisan geoip:update` (monthly recommended)
 - **Health Checks**: `php artisan links:check-health` (daily recommended)

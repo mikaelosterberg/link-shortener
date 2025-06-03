@@ -43,13 +43,11 @@ class UserRoleManagementTest extends TestCase
             'name' => $userData['name'],
             'email' => $userData['email'],
             'password' => bcrypt($userData['password']),
-            'email_verified_at' => now()
         ]);
 
         $user->assignRole($userData['role']);
 
         $this->assertTrue($user->hasRole('admin'));
-        $this->assertNotNull($user->email_verified_at);
     }
 
     public function test_user_role_can_be_changed(): void
@@ -111,33 +109,6 @@ class UserRoleManagementTest extends TestCase
         $this->assertTrue($roles->has('user'));
     }
 
-    public function test_email_verification_is_handled_automatically(): void
-    {
-        $superAdmin = User::factory()->create();
-        $superAdmin->assignRole('super_admin');
-
-        $this->actingAs($superAdmin);
-
-        // Test creating user with email verified
-        $user = User::create([
-            'name' => 'Verified User',
-            'email' => 'verified@example.com',
-            'password' => bcrypt('password123'),
-            'email_verified_at' => now() // This would be set based on the email_verified toggle
-        ]);
-
-        $this->assertNotNull($user->email_verified_at);
-
-        // Test creating user without email verified  
-        $unverifiedUser = User::create([
-            'name' => 'Unverified User',
-            'email' => 'unverified@example.com',
-            'password' => bcrypt('password123'),
-            'email_verified_at' => null
-        ]);
-
-        $this->assertNull($unverifiedUser->email_verified_at);
-    }
 
     public function test_panel_access_requires_proper_role(): void
     {
