@@ -32,10 +32,24 @@ class EditLinkGroup extends EditRecord
     {
         // Handle setting as default if is_default is true
         if ($this->isSettingAsDefault) {
-            $this->record->setAsDefault();
+            // Use database transaction to ensure consistency
+            \DB::transaction(function () {
+                $this->record->setAsDefault();
+            });
+            
+            // Refresh the record to ensure the UI shows the updated state
+            $this->record->refresh();
+            
+            // Send a notification to confirm the action
+            \Filament\Notifications\Notification::make()
+                ->title('Default group updated')
+                ->body("'{$this->record->name}' has been set as the default group.")
+                ->success()
+                ->send();
         } elseif ($this->record->is_default && !$this->isSettingAsDefault) {
             // If it was default but now unchecked, unset it
             $this->record->update(['is_default' => false]);
+            $this->record->refresh();
         }
     }
     

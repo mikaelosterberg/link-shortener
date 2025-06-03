@@ -25,7 +25,20 @@ class CreateLinkGroup extends CreateRecord
     {
         // Handle setting as default if is_default is true
         if ($this->isSettingAsDefault) {
-            $this->record->setAsDefault();
+            // Use database transaction to ensure consistency
+            \DB::transaction(function () {
+                $this->record->setAsDefault();
+            });
+            
+            // Refresh the record to ensure the UI shows the updated state
+            $this->record->refresh();
+            
+            // Send a notification to confirm the action
+            \Filament\Notifications\Notification::make()
+                ->title('Default group set')
+                ->body("'{$this->record->name}' has been set as the default group.")
+                ->success()
+                ->send();
         }
     }
     
