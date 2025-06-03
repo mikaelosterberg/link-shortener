@@ -78,9 +78,28 @@ class LinkResource extends Resource
                             ->default(true)
                             ->helperText('Inactive links will return 404'),
                         Forms\Components\DateTimePicker::make('expires_at')
-                            ->label('Expiration Date')
+                            ->label('Link Expiry')
+                            ->native(false)
                             ->nullable()
-                            ->minDate(now()),
+                            ->minDate(now())
+                            ->placeholder('Select when link should expire (optional)')
+                            ->displayFormat('M j, Y g:i A')
+                            ->extraInputAttributes([
+                                'autocomplete' => 'off',
+                                'data-form-type' => 'other',
+                                'data-lpignore' => 'true',
+                                'data-1p-ignore' => 'true',
+                            ])
+                            ->extraAlpineAttributes([
+                                'x-init' => 'if (navigator.userAgent.includes("Safari")) { 
+                                    setTimeout(() => { 
+                                        if ($el.value && !$el.dataset.userSet) { 
+                                            $el.value = ""; 
+                                        } 
+                                    }, 100); 
+                                }',
+                                'x-on:input' => '$el.dataset.userSet = "true"'
+                            ]),
                     ])->columns(2),
                 Forms\Components\Hidden::make('created_by')
                     ->default(auth()->id()),
@@ -263,6 +282,20 @@ class LinkResource extends Resource
                         ->modalDescription('This will check if the selected destination URLs are still accessible.')
                         ->modalSubmitActionLabel('Check Now')
                         ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('remove_expiry')
+                        ->label('Remove Expiry Date')
+                        ->icon('heroicon-o-calendar-days')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                $record->update(['expires_at' => null]);
+                            }
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Remove Expiry Dates')
+                        ->modalDescription('This will remove the expiration date from the selected links, making them permanent.')
+                        ->modalSubmitActionLabel('Remove Expiry Dates')
+                        ->deselectRecordsAfterCompletion()
+                        ->color('warning'),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
