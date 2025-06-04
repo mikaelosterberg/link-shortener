@@ -337,6 +337,17 @@ Destination: https://example.com/product?utm_source=newsletter&utm_medium=email&
 - **Validation**: Only valid UTM parameters are processed and stored
 - **Geo-Targeting Compatible**: Works seamlessly with location-based redirects
 
+**Default UTM Parameters (Built-in Solution):**
+You don't need a separate "default UTM parameters" feature - just include them in your destination URLs! The system intelligently merges parameters:
+
+```
+Destination URL: https://shop.com/sale?utm_source=website&utm_campaign=spring2024
+Newsletter Link: https://short.ly/sale?utm_source=newsletter&utm_medium=email
+Final Result: https://shop.com/sale?utm_source=newsletter&utm_campaign=spring2024&utm_medium=email
+```
+
+This approach is more flexible and follows standard marketing practices. Campaign-specific UTM parameters override defaults while preserving other values.
+
 ### Link Health Monitoring
 
 **Automated Health Checks:**
@@ -628,7 +639,6 @@ php artisan test --coverage
 - **Database Backup/Download** - Admin backup functionality for data portability
 - **Export Functionality** - CSV/JSON export for analytics data
 - **Google Analytics Integration** - Server-side event tracking
-- **Default UTM Parameters** - Set default UTM parameters per link
 
 ### Advanced Features
 - **Password Protection** - Secure links with passwords
