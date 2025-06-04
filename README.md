@@ -13,10 +13,12 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **QR Code Generation** - Instant QR codes with multiple download formats
 
 ### 📊 Analytics & Tracking
-- **Comprehensive Dashboard** - 5 custom widgets with real-time insights
+- **Comprehensive Dashboard** - 6 custom widgets with real-time insights
 - **Click Trends Chart** - Interactive line graphs with 7/30/90-day filters
 - **Top Links Widget** - Most clicked links with performance metrics
 - **Geographic Analytics** - Country and city tracking using MaxMind GeoLite2
+- **UTM Campaign Tracking** - Automatic UTM parameter pass-through and analytics
+- **Campaign Performance Widget** - Top performing campaigns, sources, and mediums
 - **Link Health Status** - Real-time monitoring of destination URL availability
 - **Performance Metrics** - Click rates, averages, and growth tracking
 - **Browser Detection** - Track user agents and devices
@@ -44,6 +46,16 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Country Statistics** - Top countries dashboard widget with click analytics
 - **Location Filtering** - Filter clicks by geographic data in admin interface
 - **Smart Caching** - Performance-optimized caching that doesn't interfere with geo-targeting
+
+### 📈 UTM Campaign Tracking
+- **Automatic Pass-Through** - UTM parameters added to short links are preserved and passed to destination URLs
+- **Parameter Validation** - Only valid UTM parameters (source, medium, campaign, term, content) are processed
+- **Smart URL Merging** - UTM parameters merge intelligently with existing query parameters
+- **Campaign Analytics** - Track performance of email campaigns, social media, and paid ads
+- **Dashboard Widget** - Real-time campaign performance overview with top sources and mediums
+- **Click-Level Data** - Every click stores complete UTM attribution for detailed analysis
+- **Filtering & Search** - Filter clicks by campaign, source, medium in admin interface
+- **Email Marketing Ready** - Works seamlessly with MailChimp, Constant Contact, and other platforms
 
 ### 📱 QR Code Features
 - **Instant Generation** - QR codes available in both table view and edit screens
@@ -287,6 +299,43 @@ Update the GeoLite2 database monthly for accuracy:
 ```bash
 php artisan geoip:update
 ```
+
+### UTM Campaign Tracking
+
+**How UTM Pass-Through Works:**
+UTM parameters added to your short links are automatically passed through to the destination URL, enabling end-to-end campaign tracking.
+
+**Example Flow:**
+```
+Original Link: https://short.ly/product
+With UTM: https://short.ly/product?utm_source=newsletter&utm_medium=email&utm_campaign=spring2024
+Destination: https://example.com/product?utm_source=newsletter&utm_medium=email&utm_campaign=spring2024
+```
+
+**Supported UTM Parameters:**
+- `utm_source` - Traffic source (newsletter, google, facebook)
+- `utm_medium` - Marketing medium (email, social, cpc)
+- `utm_campaign` - Campaign name (spring2024, black_friday)
+- `utm_term` - Paid search keywords
+- `utm_content` - A/B test content variation
+
+**Real-World Use Cases:**
+- **Email Marketing**: MailChimp automatically adds UTM tags → track email performance
+- **Social Media**: Hootsuite/Buffer campaigns → measure social ROI
+- **Paid Advertising**: Google Ads/Facebook → attribution across platforms
+- **Cross-Channel**: Compare performance across email, social, and paid channels
+
+**Analytics Dashboard:**
+1. View "Campaign Performance" widget on dashboard
+2. See top campaigns, sources, and mediums with click counts
+3. Filter by date range (today, this week, this month)
+4. Click into individual links to see detailed UTM breakdown
+
+**Advanced Features:**
+- **Parameter Merging**: UTM parameters merge with existing URL query parameters
+- **Override Protection**: New UTM parameters take precedence over existing ones
+- **Validation**: Only valid UTM parameters are processed and stored
+- **Geo-Targeting Compatible**: Works seamlessly with location-based redirects
 
 ### Link Health Monitoring
 
@@ -554,11 +603,12 @@ php artisan test --coverage
 ```
 
 **Test Coverage:**
-- 75+ tests with 400+ assertions
+- 80+ tests with 420+ assertions
 - Core redirect functionality
 - Complete API endpoint testing (links and groups)
 - Link generation and validation
 - Geographic data processing and geo-targeting rules
+- UTM parameter pass-through and analytics tracking
 - Click tracking and analytics
 - API authentication and permissions
 - User profile functionality
@@ -575,10 +625,10 @@ php artisan test --coverage
 ## Future Enhancements
 
 ### High Value & Quick Wins
-- **UTM Parameter Tracking** - Campaign and source tracking (high business value)
 - **Database Backup/Download** - Admin backup functionality for data portability
 - **Export Functionality** - CSV/JSON export for analytics data
 - **Google Analytics Integration** - Server-side event tracking
+- **Default UTM Parameters** - Set default UTM parameters per link
 
 ### Advanced Features
 - **Password Protection** - Secure links with passwords

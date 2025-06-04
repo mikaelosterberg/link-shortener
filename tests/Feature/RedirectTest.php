@@ -141,7 +141,7 @@ class RedirectTest extends TestCase
         $this->get('/cached');
 
         // Verify the cache contains the link data
-        $cacheKey = "link_cached";
+        $cacheKey = "link_data_cached";
         $this->assertTrue(Cache::has($cacheKey));
         
         $cachedLink = Cache::get($cacheKey);

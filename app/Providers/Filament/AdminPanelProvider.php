@@ -57,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\GeographicStatsWidget::class,
                 \App\Filament\Widgets\ClickTrendsChart::class,
                 \App\Filament\Widgets\TopLinksWidget::class,
+                \App\Filament\Widgets\UtmCampaignStatsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

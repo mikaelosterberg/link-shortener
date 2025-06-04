@@ -37,7 +37,7 @@ class LogClickJob implements ShouldQueue
         // Get geolocation data if available
         $location = $this->getGeolocation($this->clickData['ip_address']);
         
-        // Create click record
+        // Create click record with UTM parameters
         Click::create([
             'link_id' => $this->clickData['link_id'],
             'ip_address' => $this->clickData['ip_address'],
@@ -46,6 +46,11 @@ class LogClickJob implements ShouldQueue
             'country' => $location['country'] ?? null,
             'city' => $location['city'] ?? null,
             'clicked_at' => $this->clickData['clicked_at'],
+            'utm_source' => $this->clickData['utm_source'] ?? null,
+            'utm_medium' => $this->clickData['utm_medium'] ?? null,
+            'utm_campaign' => $this->clickData['utm_campaign'] ?? null,
+            'utm_term' => $this->clickData['utm_term'] ?? null,
+            'utm_content' => $this->clickData['utm_content'] ?? null,
         ]);
     }
     
