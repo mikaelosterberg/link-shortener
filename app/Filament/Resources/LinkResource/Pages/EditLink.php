@@ -10,6 +10,8 @@ use Filament\Resources\Pages\EditRecord;
 class EditLink extends EditRecord
 {
     protected static string $resource = LinkResource::class;
+    
+    protected bool $shouldRedirectToIndex = false;
 
     protected function getHeaderActions(): array
     {
@@ -59,6 +61,32 @@ class EditLink extends EditRecord
     
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('index');
+        // If "Save and Close" was clicked, redirect to index
+        if ($this->shouldRedirectToIndex) {
+            return $this->getResource()::getUrl('index');
+        }
+        
+        // Otherwise, stay on the edit page
+        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+    
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Save')
+                ->action(function () {
+                    $this->shouldRedirectToIndex = false;
+                    $this->save();
+                }),
+            Actions\Action::make('saveAndClose')
+                ->label('Save and Close')
+                ->action(function () {
+                    $this->shouldRedirectToIndex = true;
+                    $this->save();
+                })
+                ->color('gray'),
+            $this->getCancelFormAction(),
+        ];
     }
 }

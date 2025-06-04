@@ -36,10 +36,14 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Rate Limiting** - Protection against abuse
 
 ### 🌍 Geographic Features
-- **IP Geolocation** - Automatic location detection for clicks
-- **Country Statistics** - Top countries dashboard widget
-- **Location Filtering** - Filter clicks by geographic data
-- **Coverage Metrics** - Track geographic data availability
+- **IP Geolocation** - Automatic location detection for clicks using MaxMind GeoLite2
+- **Geo-Targeting Rules** - Redirect visitors to different URLs based on their location
+- **Flexible Targeting** - Support for countries, continents, and custom regions
+- **Custom Regions** - Pre-defined regions like GDPR Zone, Five Eyes, North America
+- **Priority-Based Rules** - Multiple rules with priority ordering for complex scenarios
+- **Country Statistics** - Top countries dashboard widget with click analytics
+- **Location Filtering** - Filter clicks by geographic data in admin interface
+- **Smart Caching** - Performance-optimized caching that doesn't interfere with geo-targeting
 
 ### 📱 QR Code Features
 - **Instant Generation** - QR codes available in both table view and edit screens
@@ -248,9 +252,38 @@ curl -X POST http://localhost:8000/api/links \
   }'
 ```
 
-### Managing Geographic Data
+### Geographic Features
 
-Update the GeoLite2 database monthly:
+**Setting up Geolocation:**
+The application requires a MaxMind GeoLite2 database for geographic features. Get a free license key from MaxMind and add it to your `.env`:
+```env
+MAXMIND_LICENSE_KEY=your_license_key_here
+```
+
+Then download the database:
+```bash
+php artisan geoip:update
+```
+
+**Geo-Targeting Rules:**
+1. Edit any link in the admin panel
+2. Go to the "Geo-Targeting Rules" tab
+3. Create rules to redirect visitors based on:
+   - **Countries** - Target specific countries (US, CA, GB, etc.)
+   - **Continents** - Target entire continents (EU, NA, AS, etc.)
+   - **Custom Regions** - Pre-defined groups like GDPR Zone, Five Eyes
+
+**Example Use Cases:**
+- Privacy policies: EU visitors → GDPR-compliant page
+- Language targeting: Spanish speakers → Spanish content
+- Compliance: Financial services → region-specific disclaimers
+- Marketing: Different landing pages for different markets
+
+**Priority System:**
+Rules are evaluated in priority order (lower number = higher priority). First matching rule wins.
+
+**Database Maintenance:**
+Update the GeoLite2 database monthly for accuracy:
 ```bash
 php artisan geoip:update
 ```
@@ -525,7 +558,7 @@ php artisan test --coverage
 - Core redirect functionality
 - Complete API endpoint testing (links and groups)
 - Link generation and validation
-- Geographic data processing
+- Geographic data processing and geo-targeting rules
 - Click tracking and analytics
 - API authentication and permissions
 - User profile functionality
@@ -537,6 +570,7 @@ php artisan test --coverage
 - Link health checking functionality
 - Role permission management
 - Custom Artisan commands
+- Geo-targeting rule evaluation and priority handling
 
 ## Future Enhancements
 
@@ -544,13 +578,15 @@ php artisan test --coverage
 - **UTM Parameter Tracking** - Campaign and source tracking (high business value)
 - **Database Backup/Download** - Admin backup functionality for data portability
 - **Export Functionality** - CSV/JSON export for analytics data
+- **Google Analytics Integration** - Server-side event tracking
 
 ### Advanced Features
-- **Custom Domains** - Support for branded short domains
 - **Password Protection** - Secure links with passwords
 - **A/B Testing** - Multiple destination URLs with traffic splitting
-- **Geo-targeting** - Location-based redirects
+- **Link Scheduling** - Auto-activate/deactivate at specific times
+- **Bulk Operations** - Mass edit/delete links
 - **Webhooks** - Real-time click event notifications
+- **Team Management** - Workspaces and collaboration features
 
 ## Contributing
 

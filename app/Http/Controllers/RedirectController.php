@@ -6,23 +6,28 @@ use App\Events\LinkClicked;
 use App\Events\LinkNotFound;
 use App\Jobs\LogClickJob;
 use App\Models\Link;
+use App\Services\GeolocationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class RedirectController extends Controller
 {
-    public function redirect(string $shortCode)
+    public function redirect(string $shortCode, GeolocationService $geoService)
     {
-        // Check file cache first
-        $cacheKey = "link_{$shortCode}";
+        // Cache the link data, but not the redirect decision
+        $cacheKey = "link_data_{$shortCode}";
         $link = Cache::remember($cacheKey, 3600, function () use ($shortCode) {
-            return DB::selectOne(
-                'SELECT id, original_url, redirect_type FROM links 
-                WHERE short_code = ? AND is_active = 1 
-                AND (expires_at IS NULL OR expires_at > ?)',
-                [$shortCode, now()]
-            );
+            return Link::with(['geoRules' => function($query) {
+                $query->where('is_active', true)->orderBy('priority');
+            }])
+                ->where('short_code', $shortCode)
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->first();
         });
         
         if (!$link) {
@@ -54,11 +59,24 @@ class RedirectController extends Controller
             abort(404);
         }
         
-        // Create Link model instance for event (more useful than raw DB result)
-        $linkModel = Link::find($link->id);
+        // Determine target URL based on geo rules
+        $targetUrl = $link->original_url;
+        
+        // Check geo rules if any exist
+        if ($link->geoRules->isNotEmpty() && $geoService->isAvailable()) {
+            $location = $geoService->getFullLocation(request()->ip());
+            
+            // Find the first matching rule (already sorted by priority)
+            foreach ($link->geoRules as $rule) {
+                if ($rule->matchesLocation($location)) {
+                    $targetUrl = $rule->redirect_url;
+                    break;
+                }
+            }
+        }
         
         // Dispatch click event for analytics/plugins
-        event(new LinkClicked($linkModel, request()));
+        event(new LinkClicked($link, request()));
         
         // Log click asynchronously
         if (config('shortener.analytics.async_tracking', true)) {
@@ -74,6 +92,6 @@ class RedirectController extends Controller
         // Increment counter asynchronously
         DB::table('links')->where('id', $link->id)->increment('click_count');
         
-        return redirect($link->original_url, $link->redirect_type);
+        return redirect($targetUrl, $link->redirect_type);
     }
 }

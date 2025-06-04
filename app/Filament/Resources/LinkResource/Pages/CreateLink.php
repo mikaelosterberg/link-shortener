@@ -10,6 +10,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateLink extends CreateRecord
 {
     protected static string $resource = LinkResource::class;
+    
+    protected bool $shouldRedirectToIndex = false;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
@@ -37,6 +39,33 @@ class CreateLink extends CreateRecord
     
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('index');
+        // If "Save and Close" was clicked, redirect to index
+        if ($this->shouldRedirectToIndex) {
+            return $this->getResource()::getUrl('index');
+        }
+        
+        // Otherwise, redirect to edit page to allow QR code and geo rules access
+        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+    
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                ->label('Save')
+                ->action(function () {
+                    $this->shouldRedirectToIndex = false;
+                    $this->create();
+                }),
+            $this->getCreateAnotherFormAction(),
+            Actions\Action::make('createAndClose')
+                ->label('Save and Close')
+                ->action(function () {
+                    $this->shouldRedirectToIndex = true;
+                    $this->create();
+                })
+                ->color('gray'),
+            $this->getCancelFormAction(),
+        ];
     }
 }

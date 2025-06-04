@@ -55,6 +55,11 @@ class Link extends Model
     {
         return $this->hasMany(Click::class);
     }
+    
+    public function geoRules(): HasMany
+    {
+        return $this->hasMany(GeoRule::class)->orderBy('priority');
+    }
 
     public function isExpired(): bool
     {
