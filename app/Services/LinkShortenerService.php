@@ -18,7 +18,7 @@ class LinkShortenerService
         return $this->generateRandomCode();
     }
     
-    private function processCustomSlug(string $slug): string
+    public function processCustomSlug(string $slug): string
     {
         // Convert to lowercase and replace spaces with hyphens
         $slug = strtolower(trim($slug));

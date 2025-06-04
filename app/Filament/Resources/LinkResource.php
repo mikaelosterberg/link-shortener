@@ -32,9 +32,9 @@ class LinkResource extends Resource
                 Forms\Components\Section::make('Link Details')
                     ->schema([
                         Forms\Components\TextInput::make('custom_slug')
-                            ->label('Custom Short URL (Optional)')
+                            ->label('Short URL')
                             ->placeholder('my-custom-url')
-                            ->helperText('Leave empty to auto-generate. Only letters, numbers, hyphens allowed.')
+                            ->helperText('Only letters, numbers, hyphens, and underscores allowed.')
                             ->regex('/^[a-z0-9\-_]*$/')
                             ->unique(ignoreRecord: true),
                         Forms\Components\TextInput::make('original_url')

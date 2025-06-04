@@ -2,11 +2,11 @@
 
 return [
     'shield_resource' => [
-        'should_register_navigation' => false,
+        'should_register_navigation' => true,
         'slug' => 'shield/roles',
         'navigation_sort' => -1,
         'navigation_badge' => true,
-        'navigation_group' => true,
+        'navigation_group' => 'Settings',
         'sub_navigation_position' => null,
         'is_globally_searchable' => false,
         'show_model_path' => true,
@@ -76,10 +76,7 @@ return [
             'AccountWidget', 'FilamentInfoWidget',
         ],
 
-        'resources' => [
-            'RoleResource', // Exclude role management from permission checks - only super_admin can access
-            'CustomRoleResource', // Also exclude our custom role resource
-        ],
+        'resources' => [],
     ],
 
     'discovery' => [

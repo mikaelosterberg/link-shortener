@@ -15,8 +15,9 @@ class CreateLink extends CreateRecord
     {
         $service = new LinkShortenerService();
         
-        // Generate short code if not provided via custom_slug
-        $data['short_code'] = $service->generateUniqueCode($data['custom_slug'] ?? null);
+        // Generate short code - use custom_slug if provided and not empty, otherwise auto-generate
+        $customSlug = !empty($data['custom_slug']) ? $data['custom_slug'] : null;
+        $data['short_code'] = $service->generateUniqueCode($customSlug);
         
         // Set created_by if not set
         if (!isset($data['created_by'])) {
