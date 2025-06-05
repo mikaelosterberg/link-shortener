@@ -646,8 +646,7 @@ php artisan test --coverage
 ## Future Enhancements
 
 ### High Value & Quick Wins
-- **Database Backup/Download** - Admin backup functionality for data portability
-- **Export Functionality** - CSV/JSON export for analytics data
+- **CSV Import System** - Bulk link creation and migration from other services (comprehensive design complete, ready for implementation)
 - **Google Analytics Integration** - Server-side event tracking
 
 ### Advanced Features

@@ -1093,7 +1093,7 @@ This project will provide hands-on experience with Laravel and Filament while bu
 ### Additional Enhancement Ideas
 
 **High Value & Quick Wins:**
-1. **Database Backup/Download** - Admin backup functionality for data portability
+1. **CSV Import System** - Bulk link creation and migration from other services (detailed design below)
 
 **Medium Priority:**
 2. **Custom Domains** - Support for branded short domains
@@ -1106,6 +1106,247 @@ This project will provide hands-on experience with Laravel and Filament while bu
 7. **Webhooks** - Real-time click event notifications
 8. **Team Management** - Workspaces and collaboration features
 9. **Email Reports** - Scheduled analytics reports
+
+## CSV Import System Design (Future Implementation)
+
+### Overview
+A comprehensive CSV import system for bulk link creation, migration from other services, and data restoration. Designed for super admins with proper validation, preview, and job queue processing.
+
+### Feature Requirements
+
+**Access Control:**
+- Super admin only access
+- Separate Filament page under "System" menu
+- Permission-based visibility
+
+**File Handling:**
+- Support CSV files up to 50MB
+- Validate file format and structure
+- Temporary file storage with cleanup
+- Sample template download
+
+**CSV Format:**
+```csv
+original_url,custom_slug,group_name,redirect_type,expires_at,is_active
+https://example.com,my-link,Marketing,302,2024-12-31 23:59:59,1
+https://google.com,,General,301,,1
+```
+
+**Required Fields:**
+- `original_url` - Destination URL (validated)
+
+**Optional Fields:**
+- `custom_slug` - Custom short code (validated for uniqueness)
+- `group_name` - Category name (auto-created if doesn't exist)
+- `redirect_type` - 301, 302, 307, 308 (defaults to 302)
+- `expires_at` - Expiration date (ISO format)
+- `is_active` - 1/0 or true/false (defaults to 1)
+
+### Multi-Step Import Process
+
+**Step 1: File Upload**
+```php
+// Filament form components
+FileUpload::make('csv_file')
+    ->acceptedFileTypes(['text/csv', 'application/csv'])
+    ->maxSize(51200) // 50MB
+    ->required()
+    ->live()
+    ->afterStateUpdated(fn ($state) => $this->validateCsv($state))
+
+Button::make('download_template')
+    ->label('Download Sample CSV')
+    ->icon('heroicon-o-arrow-down-tray')
+    ->action(fn () => $this->downloadTemplate())
+```
+
+**Step 2: Validation & Preview**
+- Parse CSV rows with detailed validation
+- Display preview table with status indicators:
+  - ✅ Valid rows (green)
+  - ⚠️ Warning rows (yellow) - valid but with issues
+  - ❌ Error rows (red) - will be skipped
+
+**Validation Rules:**
+```php
+- URL format validation
+- Custom slug uniqueness check
+- Group name validation/auto-creation
+- Redirect type validation
+- Date format validation
+- Duplicate detection within file
+```
+
+**Step 3: Import Configuration**
+```php
+Select::make('duplicate_handling')
+    ->options([
+        'skip' => 'Skip duplicates',
+        'update' => 'Update existing links',
+        'create_new' => 'Create with auto-generated slug'
+    ])
+    ->default('skip')
+
+Toggle::make('skip_invalid_rows')
+    ->label('Skip invalid rows and continue')
+    ->default(true)
+
+Toggle::make('send_email_notification')
+    ->label('Email me when import completes')
+    ->default(true)
+```
+
+**Step 4: Processing**
+```php
+// For small imports (<100 rows) - synchronous
+// For large imports (100+ rows) - job queue
+
+class ProcessCsvImportJob implements ShouldQueue
+{
+    public function handle()
+    {
+        // Process in batches of 50
+        // Update progress in cache/database
+        // Handle errors gracefully
+        // Send completion notification
+    }
+}
+```
+
+**Step 5: Results & Reporting**
+- Success/failure summary
+- Downloadable error log CSV
+- Links to successfully imported items
+- Import history log
+
+### Technical Implementation
+
+**File Structure:**
+```
+app/
+├── Filament/Pages/
+│   └── ImportLinks.php
+├── Jobs/
+│   ├── ProcessCsvImportJob.php
+│   └── ValidateCsvImportJob.php
+├── Services/
+│   └── CsvImportService.php
+└── Models/
+    └── ImportLog.php
+```
+
+**Database Schema:**
+```sql
+-- Import history and tracking
+import_logs:
+- id, user_id, filename, total_rows, successful_rows
+- failed_rows, status, started_at, completed_at
+- error_log_path, created_at, updated_at
+
+-- Temporary import data during processing
+import_batches:
+- id, import_log_id, batch_number, status
+- processed_at, error_count, created_at
+```
+
+**Service Class:**
+```php
+class CsvImportService
+{
+    public function validateCsv(string $filePath): array
+    public function previewImport(string $filePath): Collection
+    public function processImport(ImportLog $importLog): void
+    public function generateTemplate(): Response
+    private function validateRow(array $row): array
+    private function createLinkFromRow(array $row): ?Link
+}
+```
+
+**Queue Configuration:**
+```php
+// Process imports on dedicated queue
+ProcessCsvImportJob::dispatch($importLog)
+    ->onQueue('imports')
+    ->delay(now()->addSeconds(5));
+
+// Progress tracking
+$progress = Cache::get("import_progress_{$importLog->id}", 0);
+```
+
+**Error Handling:**
+- Detailed error messages for each validation failure
+- Partial import success (process valid rows even if some fail)
+- Rollback option for failed imports
+- Error log export with specific failure reasons
+
+**Security Considerations:**
+- File type validation beyond extension
+- Malicious content scanning
+- Rate limiting on import attempts
+- Temporary file cleanup
+- SQL injection prevention in dynamic queries
+
+### User Experience Flow
+
+1. **Access Import Page**
+   - "System" → "Import Links" (super admin only)
+   - Upload area with drag-and-drop
+   - "Download Sample CSV" link
+
+2. **Upload & Validate**
+   - Real-time file validation
+   - Immediate feedback on format issues
+   - Preview of first 10 rows
+
+3. **Review & Configure**
+   - Full validation results table
+   - Import statistics summary
+   - Configuration options for handling
+
+4. **Process & Monitor**
+   - Progress bar for large imports
+   - Real-time status updates
+   - Option to cancel running imports
+
+5. **Review Results**
+   - Detailed success/failure report
+   - Download error log if needed
+   - Navigate to imported links
+
+### Integration Points
+
+**Existing Features:**
+- Uses existing LinkShortenerService for slug generation
+- Integrates with LinkGroup auto-creation
+- Respects permission system
+- Uses existing queue infrastructure
+
+**Future Enhancements:**
+- Import from URL (direct API imports)
+- Scheduled imports via cron
+- Import templates for popular services
+- Bulk update via CSV (not just creation)
+- Import validation API endpoint
+
+### Testing Strategy
+
+**Unit Tests:**
+- CSV parsing and validation
+- Link creation from valid rows
+- Error handling for invalid data
+
+**Feature Tests:**
+- End-to-end import process
+- Permission restrictions
+- Job queue processing
+- File upload validation
+
+**Performance Tests:**
+- Large file handling (10k+ rows)
+- Memory usage optimization
+- Job queue throughput
+
+This design provides a production-ready foundation for implementing CSV imports while maintaining data integrity and providing excellent user experience.
 
 ### Environment Configuration Notes
 - **Database**: SQLite working perfectly for development
