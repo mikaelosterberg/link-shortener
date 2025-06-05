@@ -216,7 +216,7 @@ class LinkResource extends Resource
                 Tables\Actions\Action::make('export')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
+                    ->color('info')
                     ->action(function ($livewire) {
                         // Get the filtered data using the same query as the table
                         $query = $livewire->getFilteredTableQuery();

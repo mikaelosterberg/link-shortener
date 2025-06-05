@@ -215,7 +215,7 @@ class ClicksRelationManager extends RelationManager
                 Tables\Actions\Action::make('export')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
+                    ->color('info')
                     ->action(function () {
                         $link = $this->getOwnerRecord();
                         
