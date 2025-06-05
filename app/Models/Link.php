@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Link extends Model
 {
@@ -59,6 +60,11 @@ class Link extends Model
     public function geoRules(): HasMany
     {
         return $this->hasMany(GeoRule::class)->orderBy('priority');
+    }
+    
+    public function abTest(): HasOne
+    {
+        return $this->hasOne(AbTest::class);
     }
 
     public function isExpired(): bool

@@ -22,6 +22,7 @@ class Click extends Model
         'utm_campaign',
         'utm_term',
         'utm_content',
+        'ab_test_variant_id',
     ];
 
     protected $casts = [
@@ -31,5 +32,10 @@ class Click extends Model
     public function link(): BelongsTo
     {
         return $this->belongsTo(Link::class);
+    }
+    
+    public function abTestVariant(): BelongsTo
+    {
+        return $this->belongsTo(AbTestVariant::class);
     }
 }

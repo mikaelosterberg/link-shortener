@@ -18,9 +18,14 @@ class RedirectController extends Controller
         // Cache the link data, but not the redirect decision
         $cacheKey = "link_data_{$shortCode}";
         $link = Cache::remember($cacheKey, 3600, function () use ($shortCode) {
-            return Link::with(['geoRules' => function($query) {
-                $query->where('is_active', true)->orderBy('priority');
-            }])
+            return Link::with([
+                'geoRules' => function($query) {
+                    $query->where('is_active', true)->orderBy('priority');
+                },
+                'abTest.variants' => function($query) {
+                    $query->orderBy('weight', 'desc');
+                }
+            ])
                 ->where('short_code', $shortCode)
                 ->where('is_active', true)
                 ->where(function ($query) {
@@ -59,10 +64,19 @@ class RedirectController extends Controller
             abort(404);
         }
         
-        // Determine target URL based on geo rules
+        // Determine target URL (A/B testing first, then geo rules)
         $targetUrl = $link->original_url;
+        $selectedVariant = null;
         
-        // Check geo rules if any exist
+        // Check A/B test if one exists and is active
+        if ($link->abTest && $link->abTest->isActiveNow()) {
+            $selectedVariant = $link->abTest->selectVariant();
+            if ($selectedVariant) {
+                $targetUrl = $selectedVariant->url;
+            }
+        }
+        
+        // Check geo rules if any exist (can override A/B test URL)
         if ($link->geoRules->isNotEmpty() && $geoService->isAvailable()) {
             $location = $geoService->getFullLocation(request()->ip());
             
@@ -86,7 +100,7 @@ class RedirectController extends Controller
         // Dispatch click event for analytics/plugins
         event(new LinkClicked($link, request()));
         
-        // Log click asynchronously with UTM parameters
+        // Log click asynchronously with UTM parameters and A/B test data
         if (config('shortener.analytics.async_tracking', true)) {
             LogClickJob::dispatch([
                 'link_id' => $link->id,
@@ -99,7 +113,13 @@ class RedirectController extends Controller
                 'utm_campaign' => $utmParams['utm_campaign'] ?? null,
                 'utm_term' => $utmParams['utm_term'] ?? null,
                 'utm_content' => $utmParams['utm_content'] ?? null,
+                'ab_test_variant_id' => $selectedVariant?->id,
             ])->onQueue('clicks');
+        }
+        
+        // Increment A/B test variant counter if applicable
+        if ($selectedVariant) {
+            $selectedVariant->incrementClicks();
         }
         
         // Increment counter asynchronously

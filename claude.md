@@ -348,6 +348,125 @@ See `CUSTOMIZATION.md` for detailed examples and step-by-step instructions.
 - Referrer
 - Click counts per link
 
+### 6. A/B Testing System
+
+The A/B testing feature allows you to test multiple destination URLs for a single short link to optimize conversion rates.
+
+#### Core Functionality
+**Test Management**
+- Create multiple variants with different destination URLs
+- Weighted traffic distribution (percentage-based)
+- Time-based test scheduling (start/end dates)
+- Performance tracking and analytics
+
+**Variant Selection**
+- Weighted random selection algorithm
+- Consistent user experience during test period
+- Fallback to original URL if no test is active
+
+#### Database Schema
+```sql
+-- A/B test configuration
+ab_tests: id, link_id, name, description, is_active, 
+          starts_at, ends_at, timestamps
+
+-- Test variants with traffic distribution
+ab_test_variants: id, ab_test_id, name, url, weight, 
+                  click_count, conversion_count, timestamps
+
+-- Click tracking includes variant information
+clicks: ab_test_variant_id (nullable, tracks which variant was shown)
+```
+
+#### Admin Interface Features
+**Test Configuration**
+- Create tests directly from link edit page
+- Add 2-10 variants per test with custom names and URLs
+- Set traffic weights (must total 100%)
+- Schedule tests with start/end dates
+- One A/B test per link maximum
+
+**Performance Analytics**
+- Real-time click distribution across variants
+- Conversion rate tracking per variant
+- Leading variant identification
+- Statistical significance indicators
+- Detailed performance modal with insights
+
+**Dashboard Widget**
+- Overview of all active A/B tests
+- Quick performance metrics
+- Test status monitoring (collecting data vs statistically significant)
+- Direct links to test management
+
+#### Technical Implementation
+```php
+// Redirect flow with A/B testing
+public function redirect(string $shortCode)
+{
+    $link = // ... load link with A/B test and variants
+    
+    $targetUrl = $link->original_url;
+    $selectedVariant = null;
+    
+    // Check A/B test if one exists and is active
+    if ($link->abTest && $link->abTest->isActiveNow()) {
+        $selectedVariant = $link->abTest->selectVariant();
+        if ($selectedVariant) {
+            $targetUrl = $selectedVariant->url;
+        }
+    }
+    
+    // Check geo rules (can override A/B test URL)
+    if ($link->geoRules->isNotEmpty()) {
+        // Geo-targeting logic...
+    }
+    
+    // Log click with variant information
+    LogClickJob::dispatch([
+        'ab_test_variant_id' => $selectedVariant?->id,
+        // ... other click data
+    ]);
+    
+    // Increment variant counter
+    if ($selectedVariant) {
+        $selectedVariant->incrementClicks();
+    }
+    
+    return redirect($targetUrl, $link->redirect_type);
+}
+```
+
+#### Integration with Other Features
+**UTM Parameter Pass-through**
+- A/B test variants work seamlessly with UTM parameters
+- Parameters are appended to the selected variant URL
+- Tracking maintains UTM source attribution
+
+**Geo-targeting Compatibility**
+- Geo rules can override A/B test selections
+- Priority: Geo rules → A/B test → Original URL
+- Allows for geographic customization of test variants
+
+**Performance Impact**
+- Variant selection adds ~1-2ms to redirect time
+- Uses cached link data to minimize database queries
+- Click tracking remains asynchronous
+
+#### Use Cases
+1. **Landing Page Optimization**: Test different landing pages to improve conversion rates
+2. **Content Variations**: Compare different content approaches for the same campaign
+3. **Design Testing**: Test different UI/UX approaches
+4. **Offer Comparison**: Test different promotional offers or pricing pages
+5. **Audience Segmentation**: Combined with geo-targeting for region-specific tests
+
+#### Best Practices
+- Run tests for statistical significance (100+ clicks recommended)
+- Keep variant weights balanced initially (50/50 for two variants)
+- Document test hypotheses and expected outcomes
+- Monitor conversion data beyond just click counts
+- Schedule tests during consistent traffic periods
+
 ## Development Phases
 
 ### Phase 1: Foundation Setup ✅ COMPLETED
@@ -929,6 +1048,9 @@ This project will provide hands-on experience with Laravel and Filament while bu
 26. **Active Link Monitoring** - Health checks only monitor active links (no false alarms)
 27. **Redirect After Save** - All edit/create forms redirect to list for better workflow
 28. **Custom CSS Integration** - Proper Tailwind utilities without preflight conflicts
+29. **Geo-targeting System** - Location-based redirects with country, continent, and custom region support
+30. **UTM Parameter Tracking** - Complete UTM pass-through and tracking with dashboard analytics
+31. **A/B Testing System** - Complete A/B testing with weighted variants, time-based scheduling, and performance analytics
 
 ### Key Technical Insights
 1. **WSL/Windows Integration**: Use Windows cmd.exe for PHP commands when needed
@@ -950,8 +1072,6 @@ This project will provide hands-on experience with Laravel and Filament while bu
 ### Remaining Features from Original Plan
 1. **Export Functionality** - CSV/JSON export for analytics data (Phase 5 remainder)
 2. **Google Analytics Integration** - Server-side event tracking (Phase 5.2)
-3. **A/B Testing System** - Multiple destination URLs with traffic splitting (Phase 6.1)
-4. **Geo-targeting Rules** - Location-based redirects (Phase 6.2)
 
 ### TODO: Documentation Improvements
 1. **Queue System Instructions** - Review README and consolidate queue setup instructions. Currently the health check section shows `php artisan queue:work --queue=health-checks,clicks` but other sections only mention clicks queue. Should standardize to just `php artisan queue:work` without specifying queues, as Laravel will process all queues by default. This simplifies instructions and ensures all job types are processed.
@@ -959,20 +1079,19 @@ This project will provide hands-on experience with Laravel and Filament while bu
 ### Additional Enhancement Ideas
 
 **High Value & Quick Wins:**
-1. **UTM Parameter Tracking** - Campaign and source tracking (⚡ High business value)
-2. **Database Backup/Download** - Admin backup functionality for data portability
+1. **Database Backup/Download** - Admin backup functionality for data portability
 
 **Medium Priority:**
-4. **Custom Domains** - Support for branded short domains
-5. **Password Protection** - Secure links with passwords
-6. **Link Scheduling** - Auto-activate/deactivate at specific times
-7. **Bulk Operations** - Mass edit/delete links
+2. **Custom Domains** - Support for branded short domains
+3. **Password Protection** - Secure links with passwords
+4. **Link Scheduling** - Auto-activate/deactivate at specific times
+5. **Bulk Operations** - Mass edit/delete links
 
 **Advanced Features:**
-8. **Link Preview/Thumbnails** - Generate website previews
-9. **Webhooks** - Real-time click event notifications
-10. **Team Management** - Workspaces and collaboration features
-11. **Email Reports** - Scheduled analytics reports
+6. **Link Preview/Thumbnails** - Generate website previews
+7. **Webhooks** - Real-time click event notifications
+8. **Team Management** - Workspaces and collaboration features
+9. **Email Reports** - Scheduled analytics reports
 
 ### Environment Configuration Notes
 - **Database**: SQLite working perfectly for development

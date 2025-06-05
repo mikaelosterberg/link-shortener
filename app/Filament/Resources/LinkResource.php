@@ -306,6 +306,7 @@ class LinkResource extends Resource
         return [
             RelationManagers\ClicksRelationManager::class,
             RelationManagers\GeoRulesRelationManager::class,
+            RelationManagers\AbTestRelationManager::class,
         ];
     }
 
