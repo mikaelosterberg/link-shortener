@@ -86,20 +86,26 @@ class AbTestStatsWidget extends BaseWidget
                     ->icon('heroicon-o-trophy')
                     ->iconColor('warning'),
                     
-                Tables\Columns\TextColumn::make('conversion_rate')
+                Tables\Columns\TextColumn::make('click_distribution')
                     ->getStateUsing(function (AbTest $record): string {
                         $totalClicks = $record->variants->sum('click_count');
-                        $totalConversions = $record->variants->sum('conversion_count');
                         
                         if ($totalClicks === 0) {
-                            return '0%';
+                            return 'No clicks yet';
                         }
                         
-                        $rate = round(($totalConversions / $totalClicks) * 100, 2);
-                        return "{$rate}%";
+                        $distributions = $record->variants
+                            ->map(function ($variant) use ($totalClicks) {
+                                $percentage = round(($variant->click_count / $totalClicks) * 100, 1);
+                                return "{$variant->name}: {$percentage}%";
+                            })
+                            ->join(' | ');
+                            
+                        return $distributions;
                     })
-                    ->label('Conversion Rate')
-                    ->alignCenter(),
+                    ->label('Click Distribution')
+                    ->alignCenter()
+                    ->wrap(),
                     
                 Tables\Columns\TextColumn::make('status')
                     ->getStateUsing(function (AbTest $record): string {

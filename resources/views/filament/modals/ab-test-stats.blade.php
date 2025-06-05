@@ -77,15 +77,15 @@
                             <div class="text-sm text-gray-500 dark:text-gray-400">Clicks</div>
                             <div class="text-lg font-semibold text-gray-900 dark:text-white">
                                 {{ number_format($variant->clicks_count) }}
-                                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-                                    ({{ $clickPercentage }}%)
-                                </span>
                             </div>
                         </div>
                         <div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Conversion Rate</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Traffic Share</div>
                             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-                                {{ $variant->conversion_rate }}%
+                                {{ $clickPercentage }}%
+                                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                                    (Weight: {{ $variant->weight }}%)
+                                </span>
                             </div>
                         </div>
                     </div>

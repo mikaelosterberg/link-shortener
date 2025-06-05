@@ -72,6 +72,16 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Detailed Diagnostics** - HTTP status codes, redirect chains, and error messages
 - **Queue-Based Processing** - Non-blocking health checks via job queue
 
+### 🧪 A/B Testing
+- **Multiple Destination URLs** - Test different landing pages for the same short link
+- **Weighted Traffic Distribution** - Control percentage of traffic to each variant
+- **Real-Time Performance Tracking** - Monitor click distribution across variants
+- **Time-Based Scheduling** - Set start and end dates for tests
+- **Dashboard Widget** - Overview of all active A/B tests with performance metrics
+- **Statistical Insights** - Identify leading variants and track performance
+- **UTM Compatible** - Works seamlessly with UTM parameter tracking
+- **Geo-Targeting Compatible** - Combine with location-based rules for advanced targeting
+
 <!-- TODO: Add screenshots when available
 ## Screenshots
 - Admin Dashboard with real-time statistics
@@ -642,7 +652,6 @@ php artisan test --coverage
 
 ### Advanced Features
 - **Password Protection** - Secure links with passwords
-- **A/B Testing** - Multiple destination URLs with traffic splitting
 - **Link Scheduling** - Auto-activate/deactivate at specific times
 - **Bulk Operations** - Mass edit/delete links
 - **Webhooks** - Real-time click event notifications
