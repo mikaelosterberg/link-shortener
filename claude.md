@@ -467,6 +467,20 @@ public function redirect(string $shortCode)
 - Monitor conversion data beyond just click counts
 - Schedule tests during consistent traffic periods
 
+#### Conversion Tracking (Not Yet Implemented)
+The A/B testing system includes database fields and UI for conversion tracking, but the actual tracking mechanism is not implemented. Currently:
+- Database has `conversion_count` field in `ab_test_variants` table
+- UI displays conversion rates (always 0%)
+- Model has `incrementConversions()` method ready to use
+
+**Future Implementation Options:**
+1. **Click ID Tracking**: Append unique click ID to destination URL, track conversions via webhook
+2. **JavaScript Pixel**: Embed tracking pixel on destination site (requires API key exposure)
+3. **Webhook with Variant ID**: Simple POST endpoint but less secure
+4. **External Analytics**: Use Google Analytics goals/events to track conversions separately
+
+For now, conversions can be analyzed through external tools like Google Analytics by setting up goals based on the destination URL and UTM parameters.
+
 ## Development Phases
 
 ### Phase 1: Foundation Setup ✅ COMPLETED
