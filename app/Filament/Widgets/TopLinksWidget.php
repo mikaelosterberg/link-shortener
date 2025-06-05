@@ -38,7 +38,9 @@ class TopLinksWidget extends BaseWidget
                     ->url(fn (Link $record): string => url($record->short_code))
                     ->openUrlInNewTab()
                     ->copyable()
+                    ->copyableState(fn (Link $record): string => url($record->short_code))
                     ->copyMessage('Short URL copied!')
+                    ->copyMessageDuration(1500)
                     ->badge()
                     ->color(fn (Link $record): string => $record->group ? self::mapColorToFilamentColor($record->group->color) : 'primary'),
                     
