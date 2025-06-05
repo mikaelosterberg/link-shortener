@@ -9,6 +9,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Response;
+use Carbon\Carbon;
 
 class ClicksRelationManager extends RelationManager
 {
@@ -175,9 +178,109 @@ class ClicksRelationManager extends RelationManager
                           ->orWhereNotNull('utm_content');
                     }))
                     ->label('Has UTM Data'),
+                Tables\Filters\Filter::make('date_range')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('From Date'),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Until Date'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('clicked_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('clicked_at', '<=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        
+                        if ($data['from'] ?? null) {
+                            $indicators[] = 'From ' . Carbon::parse($data['from'])->toFormattedDateString();
+                        }
+                        
+                        if ($data['until'] ?? null) {
+                            $indicators[] = 'Until ' . Carbon::parse($data['until'])->toFormattedDateString();
+                        }
+                        
+                        return $indicators;
+                    })
+                    ->label('Date Range'),
             ])
             ->headerActions([
-                // Remove create action - clicks are created automatically
+                Tables\Actions\Action::make('export')
+                    ->label('Export CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function () {
+                        $link = $this->getOwnerRecord();
+                        
+                        // Get the filtered data using the same query as the table
+                        $query = $this->getFilteredTableQuery();
+                        $clicks = $query->with('abTestVariant')->get();
+                        
+                        if ($clicks->isEmpty()) {
+                            Notification::make()
+                                ->title('No data to export')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+                        
+                        $filename = 'clicks-' . $link->short_code . '-' . now()->format('Y-m-d-H-i-s') . '.csv';
+                        
+                        $headers = [
+                            'Content-Type' => 'text/csv',
+                            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                        ];
+                        
+                        $callback = function() use ($clicks) {
+                            $file = fopen('php://output', 'w');
+                            
+                            // CSV Headers
+                            fputcsv($file, [
+                                'Date & Time',
+                                'IP Address',
+                                'Country',
+                                'City',
+                                'Browser/Device',
+                                'Referrer',
+                                'UTM Source',
+                                'UTM Medium',
+                                'UTM Campaign',
+                                'UTM Term',
+                                'UTM Content',
+                                'A/B Variant',
+                            ]);
+                            
+                            // Export data
+                            foreach ($clicks as $click) {
+                                fputcsv($file, [
+                                    $click->clicked_at->format('Y-m-d H:i:s'),
+                                    $click->ip_address,
+                                    $click->country ?? '',
+                                    $click->city ?? '',
+                                    $click->user_agent,
+                                    $click->referer ?? '',
+                                    $click->utm_source ?? '',
+                                    $click->utm_medium ?? '',
+                                    $click->utm_campaign ?? '',
+                                    $click->utm_term ?? '',
+                                    $click->utm_content ?? '',
+                                    $click->abTestVariant?->name ?? '',
+                                ]);
+                            }
+                            
+                            fclose($file);
+                        };
+                        
+                        return Response::stream($callback, 200, $headers);
+                    })
+                    ->tooltip('Export filtered click data as CSV'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

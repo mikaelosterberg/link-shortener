@@ -14,6 +14,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\ViewField;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Response;
 
 class LinkResource extends Resource
 {
@@ -209,6 +211,73 @@ class LinkResource extends Resource
                 Tables\Filters\Filter::make('expired')
                     ->query(fn (Builder $query) => $query->where('expires_at', '<', now()))
                     ->label('Expired'),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export')
+                    ->label('Export CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        // Get the filtered data using the same query as the table
+                        $query = $livewire->getFilteredTableQuery();
+                        $links = $query->with(['group', 'creator'])->get();
+                        
+                        if ($links->isEmpty()) {
+                            Notification::make()
+                                ->title('No data to export')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+                        
+                        $filename = 'links-export-' . now()->format('Y-m-d-H-i-s') . '.csv';
+                        
+                        $headers = [
+                            'Content-Type' => 'text/csv',
+                            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                        ];
+                        
+                        $callback = function() use ($links) {
+                            $file = fopen('php://output', 'w');
+                            
+                            // CSV Headers
+                            fputcsv($file, [
+                                'Short Code',
+                                'Full Short URL',
+                                'Destination URL',
+                                'Category',
+                                'Click Count',
+                                'Health Status',
+                                'Is Active',
+                                'Expires At',
+                                'Created By',
+                                'Created At',
+                                'Last Updated',
+                            ]);
+                            
+                            // Export data
+                            foreach ($links as $link) {
+                                fputcsv($file, [
+                                    $link->short_code,
+                                    url($link->short_code),
+                                    $link->original_url,
+                                    $link->group?->name ?? 'Uncategorized',
+                                    $link->click_count,
+                                    ucfirst($link->health_status ?? 'unchecked'),
+                                    $link->is_active ? 'Yes' : 'No',
+                                    $link->expires_at?->format('Y-m-d H:i:s') ?? '',
+                                    $link->creator?->name ?? '',
+                                    $link->created_at->format('Y-m-d H:i:s'),
+                                    $link->updated_at->format('Y-m-d H:i:s'),
+                                ]);
+                            }
+                            
+                            fclose($file);
+                        };
+                        
+                        return Response::stream($callback, 200, $headers);
+                    })
+                    ->tooltip('Export filtered links as CSV'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
