@@ -29,8 +29,13 @@ Route::get('/qr/{link}/display', [QrCodeController::class, 'display'])
     ->name('qr.display')
     ->middleware('auth');
 
-// Redirect route with rate limiting (must be last)
+// Redirect routes with rate limiting (must be last)
 Route::get('/{shortCode}', [RedirectController::class, 'redirect'])
     ->name('redirect')
+    ->middleware('throttle:60,1')
+    ->where('shortCode', '[a-zA-Z0-9\-_]+');
+
+Route::post('/{shortCode}', [RedirectController::class, 'redirect'])
+    ->name('redirect.post')
     ->middleware('throttle:60,1')
     ->where('shortCode', '[a-zA-Z0-9\-_]+');

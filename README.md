@@ -82,6 +82,15 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **UTM Compatible** - Works seamlessly with UTM parameter tracking
 - **Geo-Targeting Compatible** - Combine with location-based rules for advanced targeting
 
+### 🔒 Security & Access Control
+- **Password Protection** - Secure links with password entry before redirect
+- **Click Limits** - Automatically disable links after specified number of clicks
+- **Session-Based Authentication** - Password entry persists across user sessions
+- **Professional UI** - Clean password forms and limit exceeded pages
+- **Real-Time Enforcement** - Security checks use live database data, not cached values
+- **Admin Management** - Easy bulk operations, filtering, and click count resets
+- **Performance Optimized** - Security checks only run for protected links
+
 <!-- TODO: Add screenshots when available
 ## Screenshots
 - Admin Dashboard with real-time statistics
@@ -650,7 +659,6 @@ php artisan test --coverage
 - **Google Analytics Integration** - Server-side event tracking
 
 ### Advanced Features
-- **Password Protection** - Secure links with passwords
 - **Link Scheduling** - Auto-activate/deactivate at specific times
 - **Bulk Operations** - Mass edit/delete links
 - **Webhooks** - Real-time click event notifications

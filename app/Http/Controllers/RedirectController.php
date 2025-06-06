@@ -26,6 +26,7 @@ class RedirectController extends Controller
                     $query->orderBy('weight', 'desc');
                 }
             ])
+                ->select(['*']) // Ensure all fields including password and click_limit are loaded
                 ->where('short_code', $shortCode)
                 ->where('is_active', true)
                 ->where(function ($query) {
@@ -62,6 +63,46 @@ class RedirectController extends Controller
             }
             
             abort(404);
+        }
+        
+        // Only fetch real-time data if link has security features (password or click limit)
+        $needsSecurityCheck = $link->click_limit !== null || !empty($link->password);
+        $currentLinkData = null;
+        
+        if ($needsSecurityCheck) {
+            $currentLinkData = DB::table('links')->where('id', $link->id)->first(['click_count', 'click_limit', 'password']);
+            
+            // Check if click limit has been exceeded
+            if ($currentLinkData && $currentLinkData->click_limit && $currentLinkData->click_count >= $currentLinkData->click_limit) {
+                return response()->view('link.click-limit-exceeded', [
+                    'link' => $link
+                ], 403);
+            }
+            
+            // Check password protection (use real-time password data)
+            if ($currentLinkData && !empty($currentLinkData->password)) {
+                $sessionKey = "link_password_{$link->id}";
+            
+            // Check if password was submitted
+            if (request()->isMethod('post') && request()->has('password')) {
+                if (request('password') === $currentLinkData->password) {
+                    // Store in session for future access
+                    session([$sessionKey => true]);
+                } else {
+                    return response()->view('link.password-form', [
+                        'link' => $link,
+                        'error' => 'Incorrect password. Please try again.'
+                    ]);
+                }
+            }
+            
+                // Check if password already provided in session
+                if (!session($sessionKey)) {
+                    return response()->view('link.password-form', [
+                        'link' => $link
+                    ]);
+                }
+            }
         }
         
         // Determine target URL (A/B testing first, then geo rules)

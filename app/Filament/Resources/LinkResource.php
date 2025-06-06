@@ -73,6 +73,20 @@ class LinkResource extends Resource
                             ->default(302)
                             ->required(),
                     ])->columns(2),
+                Forms\Components\Section::make('Security & Limits')
+                    ->schema([
+                        Forms\Components\TextInput::make('password')
+                            ->label('Password Protection')
+                            ->password()
+                            ->nullable()
+                            ->helperText('Users will need to enter this password before accessing the link'),
+                        Forms\Components\TextInput::make('click_limit')
+                            ->label('Click Limit')
+                            ->numeric()
+                            ->nullable()
+                            ->minValue(1)
+                            ->helperText('Link will become unavailable after this many clicks'),
+                    ])->columns(2),
                 Forms\Components\Section::make('Settings')
                     ->schema([
                         Forms\Components\Toggle::make('is_active')
@@ -161,7 +175,22 @@ class LinkResource extends Resource
                 Tables\Columns\TextColumn::make('click_count')
                     ->label('Clicks')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(function ($record) {
+                        if ($record->hasClickLimit()) {
+                            $remaining = $record->remaining_clicks;
+                            return $remaining > 0 
+                                ? "Limit: {$record->click_limit} ({$remaining} remaining)"
+                                : "Limit reached ({$record->click_limit})";
+                        }
+                        return null;
+                    }),
+                Tables\Columns\IconColumn::make('password_protected')
+                    ->label('🔒')
+                    ->getStateUsing(fn ($record) => $record->hasPassword())
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->tooltip(fn ($record) => $record->hasPassword() ? 'Password protected' : 'No password'),
                 Tables\Columns\IconColumn::make('health_status')
                     ->label('Health')
                     ->icon(fn ($record) => $record->health_status_icon)
@@ -211,6 +240,15 @@ class LinkResource extends Resource
                 Tables\Filters\Filter::make('expired')
                     ->query(fn (Builder $query) => $query->where('expires_at', '<', now()))
                     ->label('Expired'),
+                Tables\Filters\Filter::make('password_protected')
+                    ->query(fn (Builder $query) => $query->whereNotNull('password'))
+                    ->label('Password Protected'),
+                Tables\Filters\Filter::make('has_click_limit')
+                    ->query(fn (Builder $query) => $query->whereNotNull('click_limit'))
+                    ->label('Has Click Limit'),
+                Tables\Filters\Filter::make('click_limit_exceeded')
+                    ->query(fn (Builder $query) => $query->whereRaw('click_count >= click_limit AND click_limit IS NOT NULL'))
+                    ->label('Click Limit Exceeded'),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('export')
@@ -366,6 +404,20 @@ class LinkResource extends Resource
                         ->deselectRecordsAfterCompletion()
                         ->color('warning'),
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('reset_click_counts')
+                        ->label('Reset Click Counts')
+                        ->icon('heroicon-o-arrow-path')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                $record->update(['click_count' => 0]);
+                            }
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Reset Click Counts')
+                        ->modalDescription('This will reset the click count to 0 for selected links. This action cannot be undone.')
+                        ->modalSubmitActionLabel('Reset Counts')
+                        ->deselectRecordsAfterCompletion()
+                        ->color('warning'),
                 ]),
             ]);
     }

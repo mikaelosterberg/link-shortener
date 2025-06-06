@@ -1065,6 +1065,7 @@ This project will provide hands-on experience with Laravel and Filament while bu
 29. **Geo-targeting System** - Location-based redirects with country, continent, and custom region support
 30. **UTM Parameter Tracking** - Complete UTM pass-through and tracking with dashboard analytics
 31. **A/B Testing System** - Complete A/B testing with weighted variants, time-based scheduling, and performance analytics
+32. **Password Protection & Click Limits** - Secure links with password entry and automatic disabling after click limits
 
 ### Key Technical Insights
 1. **WSL/Windows Integration**: Use Windows cmd.exe for PHP commands when needed
@@ -1097,9 +1098,8 @@ This project will provide hands-on experience with Laravel and Filament while bu
 
 **Medium Priority:**
 2. **Custom Domains** - Support for branded short domains
-3. **Password Protection** - Secure links with passwords
-4. **Link Scheduling** - Auto-activate/deactivate at specific times
-5. **Bulk Operations** - Mass edit/delete links
+3. **Link Scheduling** - Auto-activate/deactivate at specific times
+4. **Bulk Operations** - Mass edit/delete links
 
 **Advanced Features:**
 6. **Link Preview/Thumbnails** - Generate website previews
