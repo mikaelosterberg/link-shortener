@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Link;
+use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -42,7 +43,7 @@ class TopLinksWidget extends BaseWidget
                     ->copyMessage('Short URL copied!')
                     ->copyMessageDuration(1500)
                     ->badge()
-                    ->color(fn (Link $record): string => $record->group ? self::mapColorToFilamentColor($record->group->color) : 'primary'),
+                    ->color(fn (Link $record) => $record->group ? Color::hex($record->group->color) : 'primary'),
                     
                 TextColumn::make('original_url')
                     ->label('Destination URL')
@@ -100,34 +101,4 @@ class TopLinksWidget extends BaseWidget
         return $filterLabels[$this->filter] ?? '7 days';
     }
     
-    /**
-     * Map hex color to closest Filament color name
-     */
-    private static function mapColorToFilamentColor(string $hexColor): string
-    {
-        // Remove # if present
-        $hex = ltrim($hexColor, '#');
-        
-        // Convert to RGB
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-        
-        // Map to closest Filament color based on dominant channel
-        if ($r > $g && $r > $b) {
-            if ($r > 200) return 'danger';   // Red
-            return 'warning';                // Dark red/orange
-        } elseif ($g > $r && $g > $b) {
-            return 'success';                // Green
-        } elseif ($b > $r && $b > $g) {
-            if ($b > 180) return 'info';     // Blue
-            return 'primary';                // Dark blue
-        } else {
-            // Mixed colors or grays
-            $brightness = ($r + $g + $b) / 3;
-            if ($brightness < 100) return 'gray';
-            if ($r > 150 && $g > 150) return 'warning'; // Yellow/orange
-            return 'primary';                // Default
-        }
-    }
 }
