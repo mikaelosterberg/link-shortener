@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('priority')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->index(['link_id', 'is_active', 'priority']);
         });
     }

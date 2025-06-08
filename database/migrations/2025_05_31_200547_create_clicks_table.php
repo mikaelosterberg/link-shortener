@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('country', 100)->nullable();
             $table->string('city', 100)->nullable();
             $table->timestamp('clicked_at')->useCurrent();
-            
+
             $table->index('link_id');
             $table->index('clicked_at');
             $table->index(['link_id', 'clicked_at']);

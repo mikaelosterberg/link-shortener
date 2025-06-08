@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Models\AbTest;
-use App\Models\AbTestVariant;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -12,11 +11,11 @@ use Illuminate\Database\Eloquent\Builder;
 class AbTestStatsWidget extends BaseWidget
 {
     protected static ?string $heading = 'Active A/B Tests';
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     protected static ?int $sort = 5;
-    
+
     public function table(Table $table): Table
     {
         return $table
@@ -43,7 +42,7 @@ class AbTestStatsWidget extends BaseWidget
                     ->searchable()
                     ->sortable()
                     ->description(fn (AbTest $record): ?string => $record->description),
-                    
+
                 Tables\Columns\TextColumn::make('link.short_code')
                     ->label('Link')
                     ->formatStateUsing(fn ($state) => url($state))
@@ -51,12 +50,12 @@ class AbTestStatsWidget extends BaseWidget
                     ->copyableState(fn ($record) => url($record->link->short_code))
                     ->copyMessage('Link copied!')
                     ->tooltip('Click to copy'),
-                    
+
                 Tables\Columns\TextColumn::make('variants_count')
                     ->counts('variants')
                     ->label('Variants')
                     ->alignCenter(),
-                    
+
                 Tables\Columns\TextColumn::make('total_clicks')
                     ->getStateUsing(function (AbTest $record): int {
                         return $record->variants->sum('click_count');
@@ -64,53 +63,54 @@ class AbTestStatsWidget extends BaseWidget
                     ->label('Total Clicks')
                     ->numeric()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('leading_variant')
                     ->getStateUsing(function (AbTest $record): string {
                         $leadingVariant = $record->variants
                             ->sortByDesc('click_count')
                             ->first();
-                            
-                        if (!$leadingVariant || $leadingVariant->click_count === 0) {
+
+                        if (! $leadingVariant || $leadingVariant->click_count === 0) {
                             return 'No data yet';
                         }
-                        
+
                         $totalClicks = $record->variants->sum('click_count');
-                        $percentage = $totalClicks > 0 
+                        $percentage = $totalClicks > 0
                             ? round(($leadingVariant->click_count / $totalClicks) * 100, 1)
                             : 0;
-                            
+
                         return "{$leadingVariant->name} ({$percentage}%)";
                     })
                     ->label('Leading Variant')
                     ->icon('heroicon-o-trophy')
                     ->iconColor('warning'),
-                    
+
                 Tables\Columns\TextColumn::make('click_distribution')
                     ->getStateUsing(function (AbTest $record): string {
                         $totalClicks = $record->variants->sum('click_count');
-                        
+
                         if ($totalClicks === 0) {
                             return 'No clicks yet';
                         }
-                        
+
                         $distributions = $record->variants
                             ->map(function ($variant) use ($totalClicks) {
                                 $percentage = round(($variant->click_count / $totalClicks) * 100, 1);
+
                                 return "{$variant->name}: {$percentage}%";
                             })
                             ->join(' | ');
-                            
+
                         return $distributions;
                     })
                     ->label('Click Distribution')
                     ->alignCenter()
                     ->wrap(),
-                    
+
                 Tables\Columns\TextColumn::make('status')
                     ->getStateUsing(function (AbTest $record): string {
                         $totalClicks = $record->variants->sum('click_count');
-                        
+
                         if ($totalClicks === 0) {
                             return 'No Traffic';
                         } elseif ($totalClicks < 100) {
@@ -127,7 +127,7 @@ class AbTestStatsWidget extends BaseWidget
                         default => 'gray',
                     })
                     ->label('Status'),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Started')
                     ->dateTime('M j, Y')
@@ -141,10 +141,9 @@ class AbTestStatsWidget extends BaseWidget
                     ->label('View Details')
                     ->icon('heroicon-o-chart-bar')
                     ->color('info')
-                    ->url(fn (AbTest $record): string => 
-                        route('filament.admin.resources.links.edit', [
-                            'record' => $record->link_id
-                        ]) . '#ab-test'
+                    ->url(fn (AbTest $record): string => route('filament.admin.resources.links.edit', [
+                        'record' => $record->link_id,
+                    ]).'#ab-test'
                     )
                     ->tooltip('View A/B test details'),
             ])
@@ -153,12 +152,12 @@ class AbTestStatsWidget extends BaseWidget
             ->emptyStateIcon('heroicon-o-beaker')
             ->poll('30s'); // Refresh every 30 seconds
     }
-    
+
     protected function getTableRecordsPerPageSelectOptions(): array
     {
         return [5, 10, 25];
     }
-    
+
     public static function canView(): bool
     {
         // Only show if there are any A/B tests in the system

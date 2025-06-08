@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\AbTest;
 use App\Models\Link;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -27,7 +26,7 @@ class AbTestFactory extends Factory
             'ends_at' => null,
         ];
     }
-    
+
     /**
      * Indicate that the A/B test is inactive.
      */
@@ -37,7 +36,7 @@ class AbTestFactory extends Factory
             'is_active' => false,
         ]);
     }
-    
+
     /**
      * Indicate that the A/B test has time boundaries.
      */
@@ -48,7 +47,7 @@ class AbTestFactory extends Factory
             'ends_at' => now()->addDay(),
         ]);
     }
-    
+
     /**
      * Indicate that the A/B test is scheduled for the future.
      */
@@ -59,7 +58,7 @@ class AbTestFactory extends Factory
             'ends_at' => now()->addDays(2),
         ]);
     }
-    
+
     /**
      * Indicate that the A/B test has ended.
      */

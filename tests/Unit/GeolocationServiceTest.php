@@ -12,8 +12,8 @@ class GeolocationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->service = new GeolocationService();
+
+        $this->service = new GeolocationService;
     }
 
     public function test_returns_null_location_when_database_unavailable(): void
@@ -94,12 +94,12 @@ class GeolocationServiceTest extends TestCase
             '1.1.1.1',
             '127.0.0.1',
             '192.168.1.1',
-            'invalid-ip'
+            'invalid-ip',
         ];
 
         foreach ($testIps as $ip) {
             $location = $this->service->getLocation($ip);
-            
+
             $this->assertIsArray($location);
             $this->assertArrayHasKey('country', $location);
             $this->assertArrayHasKey('city', $location);

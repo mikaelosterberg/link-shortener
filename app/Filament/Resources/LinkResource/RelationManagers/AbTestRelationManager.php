@@ -3,24 +3,22 @@
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
 use App\Models\AbTest;
-use App\Models\AbTestVariant;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 class AbTestRelationManager extends RelationManager
 {
     protected static string $relationship = 'abTest';
-    
+
     protected static ?string $recordTitleAttribute = 'name';
-    
+
     protected static ?string $title = 'A/B Test';
-    
+
     protected static ?string $modelLabel = 'A/B Test';
-    
+
     public function form(Form $form): Form
     {
         return $form
@@ -29,36 +27,36 @@ class AbTestRelationManager extends RelationManager
                     ->required()
                     ->maxLength(255)
                     ->placeholder('e.g., Homepage vs Landing Page'),
-                    
+
                 Forms\Components\Textarea::make('description')
                     ->placeholder('Describe what this A/B test is measuring...')
                     ->rows(3),
-                    
+
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
                     ->default(true)
                     ->helperText('Enable or disable this A/B test'),
-                    
+
                 Forms\Components\DateTimePicker::make('starts_at')
                     ->label('Start Date')
                     ->helperText('Leave empty to start immediately'),
-                    
+
                 Forms\Components\DateTimePicker::make('ends_at')
                     ->label('End Date')
                     ->helperText('Leave empty to run indefinitely'),
-                    
+
                 Forms\Components\Repeater::make('variants')
                     ->relationship('variants')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->placeholder('e.g., Control, Variant A'),
-                            
+
                         Forms\Components\TextInput::make('url')
                             ->required()
                             ->url()
                             ->placeholder('https://example.com/page'),
-                            
+
                         Forms\Components\TextInput::make('weight')
                             ->required()
                             ->numeric()
@@ -100,32 +98,32 @@ class AbTestRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->label('Active'),
-                    
+
                 Tables\Columns\TextColumn::make('variants_count')
                     ->counts('variants')
                     ->label('Variants'),
-                    
+
                 Tables\Columns\TextColumn::make('total_clicks')
                     ->getStateUsing(function (AbTest $record): int {
                         return $record->variants->sum('click_count');
                     })
                     ->label('Total Clicks')
                     ->numeric(),
-                    
+
                 Tables\Columns\TextColumn::make('starts_at')
                     ->dateTime()
                     ->sortable()
                     ->placeholder('Immediate'),
-                    
+
                 Tables\Columns\TextColumn::make('ends_at')
                     ->dateTime()
                     ->sortable()
                     ->placeholder('No end date'),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -149,7 +147,7 @@ class AbTestRelationManager extends RelationManager
                     ->modalContent(function (AbTest $record): \Illuminate\Contracts\View\View {
                         $variants = $record->variants()->withCount('clicks')->get();
                         $totalClicks = $variants->sum('clicks_count');
-                        
+
                         return view('filament.modals.ab-test-stats', [
                             'abTest' => $record,
                             'variants' => $variants,
@@ -164,7 +162,7 @@ class AbTestRelationManager extends RelationManager
                 ]),
             ]);
     }
-    
+
     protected function canCreate(): bool
     {
         // Only allow one A/B test per link

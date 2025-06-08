@@ -24,8 +24,9 @@ class LinkGroupController extends Controller
         // Simple listing without pagination for dropdown use
         if ($request->boolean('simple', false)) {
             $groups = $query->orderBy('name')->get(['id', 'name', 'is_default']);
+
             return response()->json([
-                'data' => $groups
+                'data' => $groups,
             ]);
         }
 
@@ -40,7 +41,7 @@ class LinkGroupController extends Controller
                 'last_page' => $groups->lastPage(),
                 'per_page' => $groups->perPage(),
                 'total' => $groups->total(),
-            ]
+            ],
         ]);
     }
 
@@ -59,16 +60,16 @@ class LinkGroupController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $validated = $validator->validated();
-        
+
         // Remove is_default from creation data
         $isDefault = isset($validated['is_default']) && $validated['is_default'];
         unset($validated['is_default']);
-        
+
         $group = LinkGroup::create($validated);
 
         // Set as default if requested
@@ -78,7 +79,7 @@ class LinkGroupController extends Controller
 
         return response()->json([
             'message' => 'Link group created successfully',
-            'data' => $group
+            'data' => $group,
         ], 201);
     }
 
@@ -90,7 +91,7 @@ class LinkGroupController extends Controller
         $group = LinkGroup::withCount('links')->findOrFail($id);
 
         return response()->json([
-            'data' => $group
+            'data' => $group,
         ]);
     }
 
@@ -102,7 +103,7 @@ class LinkGroupController extends Controller
         $group = LinkGroup::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'string|max:255|unique:link_groups,name,' . $id,
+            'name' => 'string|max:255|unique:link_groups,name,'.$id,
             'description' => 'nullable|string|max:1000',
             'color' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
             'is_default' => 'boolean',
@@ -111,19 +112,19 @@ class LinkGroupController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $validated = $validator->validated();
-        
+
         // Handle is_default separately
         $setAsDefault = false;
         if (isset($validated['is_default'])) {
             $setAsDefault = $validated['is_default'];
             unset($validated['is_default']);
         }
-        
+
         $group->update($validated);
 
         // Handle default status change
@@ -133,7 +134,7 @@ class LinkGroupController extends Controller
 
         return response()->json([
             'message' => 'Link group updated successfully',
-            'data' => $group
+            'data' => $group,
         ]);
     }
 
@@ -147,14 +148,14 @@ class LinkGroupController extends Controller
         // Check if group has links
         if ($group->links()->exists()) {
             return response()->json([
-                'message' => 'Cannot delete group with existing links'
+                'message' => 'Cannot delete group with existing links',
             ], 409);
         }
 
         $group->delete();
 
         return response()->json([
-            'message' => 'Link group deleted successfully'
+            'message' => 'Link group deleted successfully',
         ]);
     }
 }

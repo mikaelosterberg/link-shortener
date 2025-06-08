@@ -16,13 +16,13 @@ class UserProfileTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('current-password'),
         ]);
-        
+
         // Create a simple role for testing (since roles:setup isn't working in tests)
         $role = \Spatie\Permission\Models\Role::create(['name' => 'panel_user']);
         $this->user->assignRole($role);
@@ -60,7 +60,7 @@ class UserProfileTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        // Simulate form submission (this is a bit complex with Livewire, 
+        // Simulate form submission (this is a bit complex with Livewire,
         // so we'll test the basic access for now)
         $this->assertDatabaseHas('users', [
             'name' => 'Test User',
@@ -85,7 +85,7 @@ class UserProfileTest extends TestCase
 
         // Test that the route exists and returns a valid response
         $response = $this->get('/admin/user-profile');
-        
+
         $response->assertStatus(200);
         $response->assertViewIs('filament.pages.user-profile');
     }

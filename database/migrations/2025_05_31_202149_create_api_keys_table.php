@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
-            
+
             $table->index('key_hash');
             $table->index('expires_at');
         });

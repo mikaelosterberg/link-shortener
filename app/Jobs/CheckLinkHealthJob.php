@@ -53,7 +53,7 @@ class CheckLinkHealthJob implements ShouldQueue
                 ->get($this->link->original_url);
 
             $statusCode = $response->status();
-            $finalUrl = $response->header('X-Guzzle-Redirect-History') 
+            $finalUrl = $response->header('X-Guzzle-Redirect-History')
                 ? last(explode(', ', $response->header('X-Guzzle-Redirect-History')))
                 : $this->link->original_url;
 
@@ -73,17 +73,17 @@ class CheckLinkHealthJob implements ShouldQueue
         } catch (\Exception $e) {
             // Handle connection errors, timeouts, etc.
             $errorMessage = $e->getMessage();
-            
+
             // Check if this is a redirect loop/limit issue
-            $isRedirectIssue = str_contains($errorMessage, 'Will not follow more than') || 
+            $isRedirectIssue = str_contains($errorMessage, 'Will not follow more than') ||
                                str_contains($errorMessage, 'redirect') ||
                                str_contains($errorMessage, 'Too many redirects');
-            
+
             $this->link->update([
                 'last_checked_at' => now(),
                 'health_status' => $isRedirectIssue ? 'warning' : 'error',
                 'http_status_code' => null,
-                'health_check_message' => 'Failed to connect: ' . $errorMessage,
+                'health_check_message' => 'Failed to connect: '.$errorMessage,
                 'final_url' => null,
             ]);
 
@@ -107,6 +107,7 @@ class CheckLinkHealthJob implements ShouldQueue
             if ($this->hasDifferentDomain($this->link->original_url, $finalUrl)) {
                 return 'warning';
             }
+
             return 'healthy';
         }
 
@@ -152,7 +153,7 @@ class CheckLinkHealthJob implements ShouldQueue
     {
         $domain1 = parse_url($url1, PHP_URL_HOST);
         $domain2 = parse_url($url2, PHP_URL_HOST);
-        
+
         return $domain1 !== $domain2;
     }
 

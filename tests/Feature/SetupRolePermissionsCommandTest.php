@@ -14,22 +14,22 @@ class SetupRolePermissionsCommandTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create the roles
         Role::create(['name' => 'super_admin']);
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'user']);
         Role::create(['name' => 'panel_user']);
-        
+
         // Create some test permissions
         $permissions = [
             'view_link', 'create_link', 'update_link', 'delete_link', 'view_any_link', 'delete_any_link',
             'view_link::group', 'create_link::group', 'update_link::group', 'delete_link::group', 'view_any_link::group', 'delete_any_link::group',
             'view_api::key', 'create_api::key', 'update_api::key', 'delete_api::key', 'view_any_api::key',
             'widget_OverviewStatsWidget', 'widget_LinkHealthWidget', 'widget_GeographicStatsWidget', 'widget_ClickTrendsChart', 'widget_TopLinksWidget',
-            'page_UserProfile'
+            'page_UserProfile',
         ];
-        
+
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
         }

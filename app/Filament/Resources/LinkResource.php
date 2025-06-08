@@ -5,16 +5,14 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\LinkResource\Pages;
 use App\Filament\Resources\LinkResource\RelationManagers;
 use App\Models\Link;
-use App\Services\LinkShortenerService;
 use Filament\Forms;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\ViewField;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Response;
 
 class LinkResource extends Resource
@@ -22,9 +20,9 @@ class LinkResource extends Resource
     protected static ?string $model = Link::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-link';
-    
+
     protected static ?string $navigationGroup = 'Link Management';
-    
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -51,8 +49,9 @@ class LinkResource extends Resource
                             ->preload()
                             ->helperText(function () {
                                 $defaultGroup = \App\Models\LinkGroup::where('is_default', true)->first();
-                                return $defaultGroup 
-                                    ? "Leave empty to use default: {$defaultGroup->name}" 
+
+                                return $defaultGroup
+                                    ? "Leave empty to use default: {$defaultGroup->name}"
                                     : null;
                             })
                             ->createOptionForm([
@@ -114,13 +113,13 @@ class LinkResource extends Resource
                                         } 
                                     }, 100); 
                                 }',
-                                'x-on:input' => '$el.dataset.userSet = "true"'
+                                'x-on:input' => '$el.dataset.userSet = "true"',
                             ]),
                     ])->columns(2),
                 Forms\Components\Hidden::make('created_by')
                     ->default(auth()->id()),
                 Forms\Components\Hidden::make('short_code'),
-                
+
                 // QR Code section - only show when editing existing links
                 Forms\Components\Section::make('QR Code')
                     ->schema([
@@ -156,13 +155,13 @@ class LinkResource extends Resource
                     ->label('Category')
                     ->html()
                     ->formatStateUsing(function ($state, $record) {
-                        if (!$state) {
+                        if (! $state) {
                             return '<span class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1 fi-color-custom bg-custom-50 text-custom-600 ring-custom-600/10 dark:bg-custom-400/10 dark:text-custom-400 dark:ring-custom-400/30" style="--c-50: var(--gray-50); --c-400: var(--gray-400); --c-600: var(--gray-600);">Uncategorized</span>';
                         }
-                        
+
                         $color = $record->group->color ?? '#6B7280';
                         $textColor = self::getContrastColor($color);
-                        
+
                         return sprintf(
                             '<span class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1" style="background-color: %s; color: %s; border-color: %s;">%s</span>',
                             $color,
@@ -179,10 +178,12 @@ class LinkResource extends Resource
                     ->description(function ($record) {
                         if ($record->hasClickLimit()) {
                             $remaining = $record->remaining_clicks;
-                            return $remaining > 0 
+
+                            return $remaining > 0
                                 ? "Limit: {$record->click_limit} ({$remaining} remaining)"
                                 : "Limit reached ({$record->click_limit})";
                         }
+
                         return null;
                     }),
                 Tables\Columns\IconColumn::make('password_protected')
@@ -196,9 +197,10 @@ class LinkResource extends Resource
                     ->icon(fn ($record) => $record->health_status_icon)
                     ->color(fn ($record) => $record->health_status_color)
                     ->tooltip(function ($record) {
-                        if (!$record->last_checked_at) {
+                        if (! $record->last_checked_at) {
                             return 'Not checked yet';
                         }
+
                         return sprintf(
                             '%s - Last checked: %s',
                             $record->health_check_message ?? 'Unknown',
@@ -259,25 +261,26 @@ class LinkResource extends Resource
                         // Get the filtered data using the same query as the table
                         $query = $livewire->getFilteredTableQuery();
                         $links = $query->with(['group', 'creator'])->get();
-                        
+
                         if ($links->isEmpty()) {
                             Notification::make()
                                 ->title('No data to export')
                                 ->warning()
                                 ->send();
+
                             return;
                         }
-                        
-                        $filename = 'links-export-' . now()->format('Y-m-d-H-i-s') . '.csv';
-                        
+
+                        $filename = 'links-export-'.now()->format('Y-m-d-H-i-s').'.csv';
+
                         $headers = [
                             'Content-Type' => 'text/csv',
-                            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
                         ];
-                        
-                        $callback = function() use ($links) {
+
+                        $callback = function () use ($links) {
                             $file = fopen('php://output', 'w');
-                            
+
                             // CSV Headers
                             fputcsv($file, [
                                 'Short Code',
@@ -292,7 +295,7 @@ class LinkResource extends Resource
                                 'Created At',
                                 'Last Updated',
                             ]);
-                            
+
                             // Export data
                             foreach ($links as $link) {
                                 fputcsv($file, [
@@ -309,10 +312,10 @@ class LinkResource extends Resource
                                     $link->updated_at->format('Y-m-d H:i:s'),
                                 ]);
                             }
-                            
+
                             fclose($file);
                         };
-                        
+
                         return Response::stream($callback, 200, $headers);
                     })
                     ->tooltip('Export filtered links as CSV'),
@@ -330,7 +333,7 @@ class LinkResource extends Resource
                 Tables\Actions\Action::make('view_stats')
                     ->label('Stats')
                     ->icon('heroicon-o-chart-bar')
-                    ->url(fn ($record) => static::getUrl('edit', ['record' => $record->id]) . '#clicks')
+                    ->url(fn ($record) => static::getUrl('edit', ['record' => $record->id]).'#clicks')
                     ->tooltip('View click statistics'),
                 Tables\Actions\Action::make('check_health')
                     ->label('Check Health')
@@ -447,15 +450,15 @@ class LinkResource extends Resource
     {
         // Remove # if present
         $hex = ltrim($hexColor, '#');
-        
+
         // Convert to RGB
         $r = hexdec(substr($hex, 0, 2));
         $g = hexdec(substr($hex, 2, 2));
         $b = hexdec(substr($hex, 4, 2));
-        
+
         // Calculate luminance
         $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
-        
+
         // Return black for light backgrounds, white for dark
         return $luminance > 0.5 ? '#000000' : '#ffffff';
     }

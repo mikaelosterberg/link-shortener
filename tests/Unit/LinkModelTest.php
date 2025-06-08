@@ -14,12 +14,13 @@ class LinkModelTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected LinkGroup $group;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->group = LinkGroup::create([
             'name' => 'Test Group',

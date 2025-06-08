@@ -77,7 +77,7 @@ class ExtensibilityTest extends TestCase
         $response = $this->get('/test123');
 
         $response->assertRedirect('https://example.com');
-        
+
         Event::assertDispatched(LinkClicked::class, function ($event) use ($link) {
             return $event->link->id === $link->id;
         });

@@ -31,12 +31,13 @@ class ApiKey extends Model
         if (is_null($value)) {
             return null;
         }
-        
+
         if (is_string($value)) {
             $decoded = json_decode($value, true);
+
             return is_array($decoded) ? $decoded : null;
         }
-        
+
         return $value;
     }
 
@@ -47,7 +48,7 @@ class ApiKey extends Model
 
     public static function generateKey(): string
     {
-        return 'sk_' . Str::random(40);
+        return 'sk_'.Str::random(40);
     }
 
     public function isExpired(): bool
@@ -57,7 +58,7 @@ class ApiKey extends Model
 
     public function hasPermission(string $permission): bool
     {
-        if (!$this->permissions) {
+        if (! $this->permissions) {
             return true; // No permissions means all permissions
         }
 

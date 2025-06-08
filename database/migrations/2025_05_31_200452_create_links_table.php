@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unsignedBigInteger('click_count')->default(0);
             $table->string('custom_slug')->nullable();
             $table->timestamps();
-            
+
             $table->index('short_code');
             $table->index('is_active');
             $table->index(['is_active', 'expires_at']);

@@ -12,17 +12,17 @@ use Illuminate\Database\Eloquent\Builder;
 class TopLinksWidget extends BaseWidget
 {
     protected static ?string $heading = 'Most Clicked Links';
-    
+
     protected static ?int $sort = 5;
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     public ?string $filter = '7';
 
     public function table(Table $table): Table
     {
         $days = (int) $this->filter;
-        
+
         return $table
             ->query(
                 Link::query()
@@ -44,22 +44,22 @@ class TopLinksWidget extends BaseWidget
                     ->copyMessageDuration(1500)
                     ->badge()
                     ->color(fn (Link $record) => $record->group ? Color::hex($record->group->color) : 'primary'),
-                    
+
                 TextColumn::make('original_url')
                     ->label('Destination URL')
                     ->limit(50)
                     ->tooltip(fn (Link $record): string => $record->original_url),
-                    
+
                 TextColumn::make('clicks_count')
-                    ->label(fn () => 'Clicks (' . $this->getFilterLabel() . ')')
+                    ->label(fn () => 'Clicks ('.$this->getFilterLabel().')')
                     ->badge()
                     ->color('success'),
-                    
+
                 TextColumn::make('click_count')
                     ->label('Total Clicks')
                     ->badge()
                     ->color('info'),
-                    
+
                 TextColumn::make('created_at')
                     ->label('Created')
                     ->since()
@@ -67,7 +67,7 @@ class TopLinksWidget extends BaseWidget
             ])
             ->paginated(false);
     }
-    
+
     protected function getFilters(): ?array
     {
         return [
@@ -76,7 +76,7 @@ class TopLinksWidget extends BaseWidget
             '90' => 'Last 3 months',
         ];
     }
-    
+
     public function getHeading(): string
     {
         $filterLabels = [
@@ -84,12 +84,12 @@ class TopLinksWidget extends BaseWidget
             '30' => 'Last 30 Days',
             '90' => 'Last 3 Months',
         ];
-        
+
         $selectedLabel = $filterLabels[$this->filter] ?? 'Last 7 Days';
-        
-        return 'Most Clicked Links (' . $selectedLabel . ')';
+
+        return 'Most Clicked Links ('.$selectedLabel.')';
     }
-    
+
     private function getFilterLabel(): string
     {
         $filterLabels = [
@@ -97,8 +97,7 @@ class TopLinksWidget extends BaseWidget
             '30' => '30 days',
             '90' => '3 months',
         ];
-        
+
         return $filterLabels[$this->filter] ?? '7 days';
     }
-    
 }

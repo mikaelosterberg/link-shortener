@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('http_status_code')->nullable()->after('health_status');
             $table->string('health_check_message')->nullable()->after('http_status_code');
             $table->string('final_url')->nullable()->after('health_check_message');
-            
+
             // Index for finding links that need checking
             $table->index(['health_status', 'last_checked_at']);
         });
@@ -37,7 +37,7 @@ return new class extends Migration
                 'health_status',
                 'http_status_code',
                 'health_check_message',
-                'final_url'
+                'final_url',
             ]);
         });
     }

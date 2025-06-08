@@ -24,9 +24,9 @@ class LinkController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        
+
         $query = Link::where('created_by', $user->id)
-            ->with(['group:id,name,color', 'clicks' => function($query) {
+            ->with(['group:id,name,color', 'clicks' => function ($query) {
                 $query->select('link_id')
                     ->selectRaw('COUNT(*) as total_clicks')
                     ->groupBy('link_id');
@@ -52,7 +52,7 @@ class LinkController extends Controller
                 'last_page' => $links->lastPage(),
                 'per_page' => $links->perPage(),
                 'total' => $links->total(),
-            ]
+            ],
         ]);
     }
 
@@ -72,22 +72,22 @@ class LinkController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'error' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         try {
             $shortCode = $this->linkService->generateUniqueCode($request->custom_slug);
-            
+
             // Use default group if no group_id provided
             $groupId = $request->group_id;
-            if (!$groupId) {
+            if (! $groupId) {
                 $defaultGroup = LinkGroup::getDefault();
                 if ($defaultGroup) {
                     $groupId = $defaultGroup->id;
                 }
             }
-            
+
             $link = Link::create([
                 'short_code' => $shortCode,
                 'original_url' => $request->original_url,
@@ -104,13 +104,13 @@ class LinkController extends Controller
 
             return response()->json([
                 'data' => $link,
-                'short_url' => url($link->short_code)
+                'short_url' => url($link->short_code),
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to create link',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400);
         }
     }
@@ -125,16 +125,16 @@ class LinkController extends Controller
             ->with(['group:id,name,color'])
             ->first();
 
-        if (!$link) {
+        if (! $link) {
             return response()->json([
                 'error' => 'Not found',
-                'message' => 'Link not found'
+                'message' => 'Link not found',
             ], 404);
         }
 
         return response()->json([
             'data' => $link,
-            'short_url' => url($link->short_code)
+            'short_url' => url($link->short_code),
         ]);
     }
 
@@ -147,10 +147,10 @@ class LinkController extends Controller
             ->where('created_by', auth()->id())
             ->first();
 
-        if (!$link) {
+        if (! $link) {
             return response()->json([
                 'error' => 'Not found',
-                'message' => 'Link not found'
+                'message' => 'Link not found',
             ], 404);
         }
 
@@ -165,19 +165,19 @@ class LinkController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'error' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $link->update($request->only([
-            'original_url', 'group_id', 'redirect_type', 'is_active', 'expires_at'
+            'original_url', 'group_id', 'redirect_type', 'is_active', 'expires_at',
         ]));
 
         $link->load('group:id,name,color');
 
         return response()->json([
             'data' => $link,
-            'short_url' => url($link->short_code)
+            'short_url' => url($link->short_code),
         ]);
     }
 
@@ -190,23 +190,23 @@ class LinkController extends Controller
             ->where('created_by', auth()->id())
             ->first();
 
-        if (!$link) {
+        if (! $link) {
             return response()->json([
                 'error' => 'Not found',
-                'message' => 'Link not found'
+                'message' => 'Link not found',
             ], 404);
         }
 
         $link->delete();
 
         return response()->json([
-            'message' => 'Link deleted successfully'
+            'message' => 'Link deleted successfully',
         ]);
     }
 
     /**
      * Simple link creation endpoint with minimal response
-     * 
+     *
      * This endpoint provides a streamlined response format
      * for applications that only need the shorturl field
      */
@@ -222,18 +222,18 @@ class LinkController extends Controller
             return response()->json([
                 'status' => 'fail',
                 'code' => 'error:validation',
-                'message' => 'Validation failed: ' . $validator->errors()->first(),
-                'statusCode' => 422
+                'message' => 'Validation failed: '.$validator->errors()->first(),
+                'statusCode' => 422,
             ], 422);
         }
 
         try {
             $shortCode = $this->linkService->generateUniqueCode($request->keyword);
-            
+
             // Use default group for simple API
             $defaultGroup = LinkGroup::getDefault();
             $groupId = $defaultGroup ? $defaultGroup->id : null;
-            
+
             $link = Link::create([
                 'short_code' => $shortCode,
                 'original_url' => $request->url,
@@ -254,21 +254,21 @@ class LinkController extends Controller
                     'url' => $link->original_url,
                     'title' => $request->title ?? '',
                     'date' => $link->created_at->format('Y-m-d H:i:s'),
-                    'ip' => $request->ip()
+                    'ip' => $request->ip(),
                 ],
                 'status' => 'success',
-                'message' => $link->original_url . ' added to database',
+                'message' => $link->original_url.' added to database',
                 'title' => $request->title ?? '',
                 'shorturl' => $shortUrl,
-                'statusCode' => 200
+                'statusCode' => 200,
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'fail',
                 'code' => 'error:creation',
-                'message' => 'Failed to create short URL: ' . $e->getMessage(),
-                'statusCode' => 400
+                'message' => 'Failed to create short URL: '.$e->getMessage(),
+                'statusCode' => 400,
             ], 400);
         }
     }
@@ -280,16 +280,16 @@ class LinkController extends Controller
     {
         $link = Link::where('id', $id)
             ->where('created_by', auth()->id())
-            ->with(['clicks' => function($query) {
+            ->with(['clicks' => function ($query) {
                 $query->select('link_id', 'country', 'city', 'clicked_at')
                     ->orderBy('clicked_at', 'desc');
             }])
             ->first();
 
-        if (!$link) {
+        if (! $link) {
             return response()->json([
                 'error' => 'Not found',
-                'message' => 'Link not found'
+                'message' => 'Link not found',
             ], 404);
         }
 
@@ -297,7 +297,7 @@ class LinkController extends Controller
         $totalClicks = $link->clicks->count();
         $todayClicks = $link->clicks->where('clicked_at', '>=', today())->count();
         $thisWeekClicks = $link->clicks->where('clicked_at', '>=', now()->startOfWeek())->count();
-        
+
         // Get top countries
         $topCountries = $link->clicks
             ->whereNotNull('country')
@@ -305,7 +305,7 @@ class LinkController extends Controller
             ->map(function ($clicks) {
                 return [
                     'country' => $clicks->first()->country,
-                    'clicks' => $clicks->count()
+                    'clicks' => $clicks->count(),
                 ];
             })
             ->sortByDesc('clicks')
@@ -321,8 +321,8 @@ class LinkController extends Controller
                     'today_clicks' => $todayClicks,
                     'this_week_clicks' => $thisWeekClicks,
                     'top_countries' => $topCountries,
-                ]
-            ]
+                ],
+            ],
         ]);
     }
 }

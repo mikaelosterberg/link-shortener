@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Link extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'short_code',
         'original_url',
@@ -59,12 +58,12 @@ class Link extends Model
     {
         return $this->hasMany(Click::class);
     }
-    
+
     public function geoRules(): HasMany
     {
         return $this->hasMany(GeoRule::class)->orderBy('priority');
     }
-    
+
     public function abTest(): HasOne
     {
         return $this->hasOne(AbTest::class);
@@ -79,28 +78,28 @@ class Link extends Model
     {
         return url($this->short_code);
     }
-    
+
     public function hasPassword(): bool
     {
-        return !empty($this->password);
+        return ! empty($this->password);
     }
-    
+
     public function hasClickLimit(): bool
     {
         return $this->click_limit !== null && $this->click_limit > 0;
     }
-    
+
     public function isClickLimitExceeded(): bool
     {
         return $this->hasClickLimit() && $this->click_count >= $this->click_limit;
     }
-    
+
     public function getRemainingClicksAttribute(): int
     {
-        if (!$this->hasClickLimit()) {
+        if (! $this->hasClickLimit()) {
             return PHP_INT_MAX;
         }
-        
+
         return max(0, $this->click_limit - $this->click_count);
     }
 
@@ -110,12 +109,12 @@ class Link extends Model
     public function requiresHealthCheck(): bool
     {
         // Never been checked
-        if (!$this->last_checked_at) {
+        if (! $this->last_checked_at) {
             return true;
         }
 
         // Check based on status and age
-        return match($this->health_status) {
+        return match ($this->health_status) {
             'healthy' => $this->last_checked_at->lt(now()->subDays(7)), // Weekly for healthy
             'warning' => $this->last_checked_at->lt(now()->subDays(3)), // Every 3 days for warnings
             'error' => $this->last_checked_at->lt(now()->subDay()),     // Daily for errors
@@ -128,7 +127,7 @@ class Link extends Model
      */
     public function getHealthStatusColorAttribute(): string
     {
-        return match($this->health_status) {
+        return match ($this->health_status) {
             'healthy' => 'success',
             'warning' => 'warning',
             'error' => 'danger',
@@ -141,7 +140,7 @@ class Link extends Model
      */
     public function getHealthStatusIconAttribute(): string
     {
-        return match($this->health_status) {
+        return match ($this->health_status) {
             'healthy' => 'heroicon-o-check-circle',
             'warning' => 'heroicon-o-exclamation-triangle',
             'error' => 'heroicon-o-x-circle',
@@ -160,20 +159,20 @@ class Link extends Model
                 // Never checked
                 $q->whereNull('last_checked_at')
                   // Or healthy links older than 7 days
-                  ->orWhere(function ($q2) {
-                      $q2->where('health_status', 'healthy')
-                         ->where('last_checked_at', '<', now()->subDays(7));
-                  })
+                    ->orWhere(function ($q2) {
+                        $q2->where('health_status', 'healthy')
+                            ->where('last_checked_at', '<', now()->subDays(7));
+                    })
                   // Or warning links older than 3 days
-                  ->orWhere(function ($q2) {
-                      $q2->where('health_status', 'warning')
-                         ->where('last_checked_at', '<', now()->subDays(3));
-                  })
+                    ->orWhere(function ($q2) {
+                        $q2->where('health_status', 'warning')
+                            ->where('last_checked_at', '<', now()->subDays(3));
+                    })
                   // Or error links older than 1 day
-                  ->orWhere(function ($q2) {
-                      $q2->where('health_status', 'error')
-                         ->where('last_checked_at', '<', now()->subDay());
-                  });
+                    ->orWhere(function ($q2) {
+                        $q2->where('health_status', 'error')
+                            ->where('last_checked_at', '<', now()->subDay());
+                    });
             });
     }
 }

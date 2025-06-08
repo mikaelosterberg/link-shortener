@@ -33,7 +33,7 @@ class Click extends Model
     {
         return $this->belongsTo(Link::class);
     }
-    
+
     public function abTestVariant(): BelongsTo
     {
         return $this->belongsTo(AbTestVariant::class);

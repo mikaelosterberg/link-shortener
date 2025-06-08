@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('click_count')->default(0);
             $table->integer('conversion_count')->default(0);
             $table->timestamps();
-            
+
             $table->index(['ab_test_id', 'weight']);
         });
     }

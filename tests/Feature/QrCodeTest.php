@@ -12,12 +12,13 @@ class QrCodeTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Link $link;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->link = Link::factory()->create([
             'short_code' => 'test123',
@@ -57,7 +58,7 @@ class QrCodeTest extends TestCase
     public function test_unauthenticated_user_cannot_access_qr_code(): void
     {
         $response = $this->get("/qr/{$this->link->id}/display");
-        
+
         $response->assertStatus(302); // Should redirect to login
     }
 
@@ -73,7 +74,7 @@ class QrCodeTest extends TestCase
     public function test_nonexistent_link_returns_404(): void
     {
         $response = $this->actingAs($this->user)
-            ->get("/qr/999999/display");
+            ->get('/qr/999999/display');
 
         $response->assertStatus(404);
     }

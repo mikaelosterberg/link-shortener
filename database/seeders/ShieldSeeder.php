@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
 
 class ShieldSeeder extends Seeder
 {
@@ -15,7 +14,7 @@ class ShieldSeeder extends Seeder
     public function run(): void
     {
         $roles = ['super_admin', 'admin', 'user', 'panel_user'];
-        
+
         foreach ($roles as $roleName) {
             Role::firstOrCreate([
                 'name' => $roleName,
@@ -26,7 +25,7 @@ class ShieldSeeder extends Seeder
 
         // Assign super admin role to first user if exists
         $firstUser = User::first();
-        if ($firstUser && !$firstUser->hasRole('super_admin')) {
+        if ($firstUser && ! $firstUser->hasRole('super_admin')) {
             $firstUser->assignRole('super_admin');
             $this->command->info("Assigned super_admin role to: {$firstUser->email}");
         }

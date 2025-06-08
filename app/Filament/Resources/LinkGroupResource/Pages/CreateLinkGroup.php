@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\LinkGroupResource\Pages;
 
 use App\Filament\Resources\LinkGroupResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateLinkGroup extends CreateRecord
@@ -14,13 +13,13 @@ class CreateLinkGroup extends CreateRecord
     {
         // Store the is_default value for afterCreate
         $this->isSettingAsDefault = $data['is_default'] ?? false;
-        
+
         // Remove is_default from data to prevent direct creation with it
         unset($data['is_default']);
-        
+
         return $data;
     }
-    
+
     protected function afterCreate(): void
     {
         // Handle setting as default if is_default is true
@@ -29,10 +28,10 @@ class CreateLinkGroup extends CreateRecord
             \DB::transaction(function () {
                 $this->record->setAsDefault();
             });
-            
+
             // Refresh the record to ensure the UI shows the updated state
             $this->record->refresh();
-            
+
             // Send a notification to confirm the action
             \Filament\Notifications\Notification::make()
                 ->title('Default group set')
@@ -41,11 +40,11 @@ class CreateLinkGroup extends CreateRecord
                 ->send();
         }
     }
-    
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
     }
-    
+
     private bool $isSettingAsDefault = false;
 }

@@ -9,7 +9,7 @@ use Illuminate\Support\ServiceProvider;
 
 /**
  * Custom Service Provider for Link Shortener Extensions
- * 
+ *
  * This is where users can add their custom functionality without
  * modifying core application files. Uncomment and modify the sections
  * you need for your specific requirements.
@@ -35,10 +35,10 @@ class CustomizationServiceProvider extends ServiceProvider
     {
         // Register event listeners for custom functionality
         $this->registerEventListeners();
-        
+
         // Register custom middleware
         // $this->registerCustomMiddleware();
-        
+
         // Register custom Filament components
         // $this->registerFilamentExtensions();
     }
@@ -75,7 +75,7 @@ class CustomizationServiceProvider extends ServiceProvider
     {
         // Example: Add custom tracking middleware
         // $this->app['router']->pushMiddlewareToGroup('web', \App\Http\Middleware\CustomTracking::class);
-        
+
         // Example: Add geo-blocking middleware
         // $this->app['router']->aliasMiddleware('geo-block', \App\Http\Middleware\GeoBlock::class);
     }
@@ -89,7 +89,7 @@ class CustomizationServiceProvider extends ServiceProvider
         // \Filament\Facades\Filament::registerWidgets([
         //     \App\Filament\Widgets\CustomAnalyticsWidget::class,
         // ]);
-        
+
         // Example: Add custom pages
         // \Filament\Facades\Filament::registerPages([
         //     \App\Filament\Pages\CustomReports::class,

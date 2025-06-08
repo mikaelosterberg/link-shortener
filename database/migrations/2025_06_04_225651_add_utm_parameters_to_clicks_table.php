@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('utm_campaign')->nullable()->after('utm_medium');
             $table->string('utm_term')->nullable()->after('utm_campaign');
             $table->string('utm_content')->nullable()->after('utm_term');
-            
+
             // Add index for campaign analytics
             $table->index(['utm_source', 'utm_medium', 'utm_campaign']);
         });
@@ -32,10 +32,10 @@ return new class extends Migration
             $table->dropIndex(['utm_source', 'utm_medium', 'utm_campaign']);
             $table->dropColumn([
                 'utm_source',
-                'utm_medium', 
+                'utm_medium',
                 'utm_campaign',
                 'utm_term',
-                'utm_content'
+                'utm_content',
             ]);
         });
     }

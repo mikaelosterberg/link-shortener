@@ -11,11 +11,11 @@ use Illuminate\Database\Eloquent\Builder;
 class UtmCampaignStatsWidget extends BaseWidget
 {
     protected static ?string $heading = 'Campaign Performance';
-    
+
     protected static ?string $description = 'Top performing UTM campaigns and sources';
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     protected static ?int $sort = 6;
 
     public function table(Table $table): Table
@@ -44,21 +44,21 @@ class UtmCampaignStatsWidget extends BaseWidget
                     ->badge()
                     ->color('info')
                     ->weight('bold'),
-                    
+
                 Tables\Columns\TextColumn::make('utm_source')
                     ->label('Source')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('success'),
-                    
+
                 Tables\Columns\TextColumn::make('utm_medium')
                     ->label('Medium')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('warning'),
-                    
+
                 Tables\Columns\TextColumn::make('click_count')
                     ->label('Clicks')
                     ->sortable()
@@ -66,7 +66,7 @@ class UtmCampaignStatsWidget extends BaseWidget
                     ->alignEnd()
                     ->badge()
                     ->color('primary'),
-                    
+
                 Tables\Columns\TextColumn::make('link_count')
                     ->label('Links')
                     ->sortable()
@@ -74,7 +74,7 @@ class UtmCampaignStatsWidget extends BaseWidget
                     ->alignEnd()
                     ->badge()
                     ->color('gray'),
-                    
+
                 Tables\Columns\TextColumn::make('last_click')
                     ->label('Last Activity')
                     ->dateTime('M j, Y g:i A')
@@ -91,7 +91,7 @@ class UtmCampaignStatsWidget extends BaseWidget
                             ->toArray();
                     })
                     ->label('Source'),
-                    
+
                 Tables\Filters\SelectFilter::make('utm_medium')
                     ->options(function () {
                         return Click::whereNotNull('utm_medium')
@@ -101,15 +101,15 @@ class UtmCampaignStatsWidget extends BaseWidget
                             ->toArray();
                     })
                     ->label('Medium'),
-                    
+
                 Tables\Filters\Filter::make('today')
                     ->query(fn (Builder $query) => $query->whereDate('clicked_at', today()))
                     ->label('Today'),
-                    
+
                 Tables\Filters\Filter::make('this_week')
                     ->query(fn (Builder $query) => $query->whereBetween('clicked_at', [now()->startOfWeek(), now()->endOfWeek()]))
                     ->label('This Week'),
-                    
+
                 Tables\Filters\Filter::make('this_month')
                     ->query(fn (Builder $query) => $query->whereMonth('clicked_at', now()->month))
                     ->label('This Month'),
@@ -120,12 +120,12 @@ class UtmCampaignStatsWidget extends BaseWidget
             ->emptyStateIcon('heroicon-o-chart-bar')
             ->paginated(false);
     }
-    
+
     protected function getTableRecordsPerPageSelectOptions(): array
     {
         return [10, 25, 50];
     }
-    
+
     public static function canView(): bool
     {
         // Check if user has permission to view campaign analytics

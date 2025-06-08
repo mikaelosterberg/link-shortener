@@ -13,12 +13,13 @@ class LinkGroupApiTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected ApiKey $apiKey;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->apiKey = ApiKey::create([
             'name' => 'Test API Key',
@@ -40,9 +41,9 @@ class LinkGroupApiTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'name', 'description', 'color', 'is_default']
+                    '*' => ['id', 'name', 'description', 'color', 'is_default'],
                 ],
-                'meta' => ['current_page', 'last_page', 'per_page', 'total']
+                'meta' => ['current_page', 'last_page', 'per_page', 'total'],
             ]);
     }
 
@@ -57,8 +58,8 @@ class LinkGroupApiTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'name', 'is_default']
-                ]
+                    '*' => ['id', 'name', 'is_default'],
+                ],
             ])
             ->assertJsonMissing(['meta']);
     }
@@ -82,7 +83,7 @@ class LinkGroupApiTest extends TestCase
                     'name' => 'Marketing Links',
                     'description' => 'Links for marketing campaigns',
                     'color' => '#FF0000',
-                ]
+                ],
             ]);
 
         $this->assertDatabaseHas('link_groups', [
@@ -108,7 +109,7 @@ class LinkGroupApiTest extends TestCase
                 'data' => [
                     'name' => 'Default Group',
                     'is_default' => true,
-                ]
+                ],
             ]);
 
         $this->assertDatabaseHas('link_groups', [
@@ -166,7 +167,7 @@ class LinkGroupApiTest extends TestCase
                     'id' => $group->id,
                     'name' => 'Updated Name',
                     'color' => '#0000FF',
-                ]
+                ],
             ]);
     }
 
@@ -180,7 +181,7 @@ class LinkGroupApiTest extends TestCase
 
         $response->assertStatus(409)
             ->assertJson([
-                'message' => 'Cannot delete group with existing links'
+                'message' => 'Cannot delete group with existing links',
             ]);
     }
 
@@ -194,7 +195,7 @@ class LinkGroupApiTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'Link group deleted successfully'
+                'message' => 'Link group deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('link_groups', ['id' => $group->id]);
@@ -222,7 +223,7 @@ class LinkGroupApiTest extends TestCase
         $response->assertStatus(403)
             ->assertJson([
                 'error' => 'Forbidden',
-                'message' => 'Insufficient permissions'
+                'message' => 'Insufficient permissions',
             ]);
     }
 

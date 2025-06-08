@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class GeographicStatsWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
-    
+
     protected function getStats(): array
     {
         // Get top countries by click count
@@ -28,9 +28,9 @@ class GeographicStatsWidget extends BaseWidget
 
         $stats = [
             Stat::make('Geographic Coverage', "{$geoPercentage}%")
-                ->description($totalClicks > 0 ? 
-                    "{$totalGeoClicks} of {$totalClicks} clicks have location data" : 
-                    "No clicks recorded yet")
+                ->description($totalClicks > 0 ?
+                    "{$totalGeoClicks} of {$totalClicks} clicks have location data" :
+                    'No clicks recorded yet')
                 ->descriptionIcon('heroicon-m-globe-alt')
                 ->color($geoPercentage > 0 ? 'success' : 'gray'),
         ];
@@ -47,8 +47,8 @@ class GeographicStatsWidget extends BaseWidget
         } else {
             // Show helpful message when no geo data
             $stats[] = Stat::make('Geographic Data', 'Not Available')
-                ->description($totalClicks > 0 ? 
-                    'Clicks from localhost/private IPs' : 
+                ->description($totalClicks > 0 ?
+                    'Clicks from localhost/private IPs' :
                     'Create some links and get clicks!')
                 ->descriptionIcon('heroicon-m-information-circle')
                 ->color('warning');
@@ -56,7 +56,7 @@ class GeographicStatsWidget extends BaseWidget
 
         return $stats;
     }
-    
+
     protected function getColumns(): int
     {
         return 4;

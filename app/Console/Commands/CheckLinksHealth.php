@@ -39,13 +39,13 @@ class CheckLinksHealth extends Command
         // Build query - only check active, non-expired links
         $query = Link::query()
             ->where('is_active', true)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             });
 
         // Apply filters
-        if (!$checkAll) {
+        if (! $checkAll) {
             $query->needsHealthCheck();
         }
 
@@ -58,6 +58,7 @@ class CheckLinksHealth extends Command
 
         if ($totalLinks === 0) {
             $this->info('No links need checking at this time.');
+
             return Command::SUCCESS;
         }
 

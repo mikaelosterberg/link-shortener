@@ -13,12 +13,13 @@ class DefaultGroupTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected ApiKey $apiKey;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->apiKey = ApiKey::create([
             'name' => 'Test API Key',
@@ -46,7 +47,7 @@ class DefaultGroupTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        
+
         // Check that the link was assigned to the default group
         $this->assertDatabaseHas('links', [
             'original_url' => 'https://example.com',
@@ -79,7 +80,7 @@ class DefaultGroupTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        
+
         // Check that the link was assigned to the specified group, not default
         $this->assertDatabaseHas('links', [
             'original_url' => 'https://example.com',
@@ -97,7 +98,7 @@ class DefaultGroupTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        
+
         // Check that the link has no group
         $this->assertDatabaseHas('links', [
             'original_url' => 'https://example.com',
@@ -120,7 +121,7 @@ class DefaultGroupTest extends TestCase
             'color' => '#00FF00',
             'is_default' => false,
         ]);
-        
+
         $secondGroup->setAsDefault();
 
         // Refresh first group and check it's no longer default

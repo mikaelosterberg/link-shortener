@@ -13,13 +13,14 @@ class LinkShortenerServiceTest extends TestCase
     use RefreshDatabase;
 
     protected LinkShortenerService $service;
+
     protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->service = new LinkShortenerService();
+
+        $this->service = new LinkShortenerService;
         $this->user = User::factory()->create();
     }
 
@@ -59,7 +60,7 @@ class LinkShortenerServiceTest extends TestCase
     public function test_rejects_empty_custom_slug(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        
+
         $this->service->generateShortCode('   !!!   ');
     }
 
@@ -101,14 +102,14 @@ class LinkShortenerServiceTest extends TestCase
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('This custom URL is already taken');
-        
+
         $this->service->generateUniqueCode('taken');
     }
 
     public function test_generates_different_codes_each_time(): void
     {
         $codes = [];
-        
+
         for ($i = 0; $i < 10; $i++) {
             $codes[] = $this->service->generateShortCode();
         }

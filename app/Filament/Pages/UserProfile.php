@@ -13,22 +13,23 @@ use Illuminate\Validation\Rules\Password;
 class UserProfile extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
-    
+
     protected static ?string $navigationLabel = 'Profile';
-    
+
     protected static ?string $title = 'My Profile';
-    
+
     protected static string $view = 'filament.pages.user-profile';
-    
+
     protected static bool $shouldRegisterNavigation = false;
 
     public ?array $profileData = [];
+
     public ?array $passwordData = [];
 
     public function mount(): void
     {
         $user = auth()->user();
-        
+
         $this->profileData = [
             'name' => $user->name,
             'email' => $user->email,
@@ -71,7 +72,7 @@ class UserProfile extends Page
                             ->required()
                             ->rules([
                                 function (string $attribute, $value, \Closure $fail) {
-                                    if (!Hash::check($value, auth()->user()->password)) {
+                                    if (! Hash::check($value, auth()->user()->password)) {
                                         $fail('The current password is incorrect.');
                                     }
                                 },
@@ -96,7 +97,7 @@ class UserProfile extends Page
     public function updateProfile(): void
     {
         $data = $this->getProfileForm()->getState();
-        
+
         auth()->user()->update([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -111,7 +112,7 @@ class UserProfile extends Page
     public function updatePassword(): void
     {
         $data = $this->getPasswordForm()->getState();
-        
+
         auth()->user()->update([
             'password' => Hash::make($data['password']),
         ]);

@@ -9,8 +9,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class LinkHealthWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
-    
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
@@ -34,43 +34,43 @@ class LinkHealthWidget extends BaseWidget
         $lastChecked = Link::whereNotNull('last_checked_at')
             ->orderBy('last_checked_at', 'desc')
             ->first();
-        
-        $lastCheckedText = $lastChecked 
-            ? 'Last check: ' . $lastChecked->last_checked_at->diffForHumans()
+
+        $lastCheckedText = $lastChecked
+            ? 'Last check: '.$lastChecked->last_checked_at->diffForHumans()
             : 'No checks performed yet';
 
         // Calculate health percentage
         $checkedTotal = $healthy + $warning + $error;
-        $healthPercentage = $checkedTotal > 0 
+        $healthPercentage = $checkedTotal > 0
             ? round(($healthy / $checkedTotal) * 100, 1)
             : 0;
 
         return [
             Stat::make('Healthy Links', $healthy)
-                ->description($healthPercentage . '% of checked links')
+                ->description($healthPercentage.'% of checked links')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success')
                 ->chart($this->getHealthTrend('healthy')),
-                
+
             Stat::make('Warning Links', $warning)
                 ->description('May have redirects or issues')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color('warning')
                 ->chart($this->getHealthTrend('warning')),
-                
+
             Stat::make('Error Links', $error)
                 ->description('Broken or inaccessible')
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger')
                 ->chart($this->getHealthTrend('error')),
-                
+
             Stat::make('Link Health Status', "{$checkedTotal}/{$total}")
                 ->description($lastCheckedText)
                 ->descriptionIcon('heroicon-m-shield-check')
                 ->color($needsChecking > 10 ? 'warning' : 'primary')
                 ->extraAttributes([
                     'class' => 'cursor-pointer',
-                    'title' => $needsChecking . ' links need checking',
+                    'title' => $needsChecking.' links need checking',
                 ]),
         ];
     }
@@ -87,5 +87,5 @@ class LinkHealthWidget extends BaseWidget
     /**
      * Poll every 5 minutes to update health status
      */
-    protected static string | null $pollingInterval = '300s';
+    protected static ?string $pollingInterval = '300s';
 }

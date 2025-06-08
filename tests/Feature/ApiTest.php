@@ -13,17 +13,19 @@ class ApiTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected ApiKey $apiKey;
+
     protected string $plainTextKey;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
-        
+
         // Create API key
-        $this->plainTextKey = 'sk_' . str_repeat('test123', 5) . 'abcdef';
+        $this->plainTextKey = 'sk_'.str_repeat('test123', 5).'abcdef';
         $this->apiKey = ApiKey::create([
             'name' => 'Test API Key',
             'key_hash' => hash('sha256', $this->plainTextKey),
@@ -37,32 +39,32 @@ class ApiTest extends TestCase
         $response = $this->getJson('/api/links');
 
         // Debug: see what we actually get
-        $this->assertNotEquals(404, $response->getStatusCode(), 'API route not found: ' . $response->getContent());
-        
+        $this->assertNotEquals(404, $response->getStatusCode(), 'API route not found: '.$response->getContent());
+
         $response->assertStatus(401)
             ->assertJson([
                 'error' => 'Unauthorized',
-                'message' => 'API key is required'
+                'message' => 'API key is required',
             ]);
     }
 
     public function test_api_rejects_invalid_key(): void
     {
         $response = $this->getJson('/api/links', [
-            'Authorization' => 'Bearer invalid_key'
+            'Authorization' => 'Bearer invalid_key',
         ]);
 
         $response->assertStatus(401)
             ->assertJson([
                 'error' => 'Unauthorized',
-                'message' => 'Invalid API key'
+                'message' => 'Invalid API key',
             ]);
     }
 
     public function test_api_accepts_valid_key_via_header(): void
     {
         $response = $this->getJson('/api/links', [
-            'Authorization' => 'Bearer ' . $this->plainTextKey
+            'Authorization' => 'Bearer '.$this->plainTextKey,
         ]);
 
         $response->assertStatus(200);
@@ -71,7 +73,7 @@ class ApiTest extends TestCase
     public function test_api_accepts_valid_key_via_x_api_key_header(): void
     {
         $response = $this->getJson('/api/links', [
-            'X-API-Key' => $this->plainTextKey
+            'X-API-Key' => $this->plainTextKey,
         ]);
 
         $response->assertStatus(200);
@@ -85,7 +87,7 @@ class ApiTest extends TestCase
         ];
 
         $response = $this->postJson('/api/links', $linkData, [
-            'Authorization' => 'Bearer ' . $this->plainTextKey
+            'Authorization' => 'Bearer '.$this->plainTextKey,
         ]);
 
         $response->assertStatus(201)
@@ -95,21 +97,21 @@ class ApiTest extends TestCase
                     'short_code',
                     'original_url',
                     'is_active',
-                    'created_at'
+                    'created_at',
                 ],
-                'short_url'
+                'short_url',
             ])
             ->assertJson([
                 'data' => [
                     'short_code' => 'test-link',
-                    'original_url' => 'https://example.com/test'
-                ]
+                    'original_url' => 'https://example.com/test',
+                ],
             ]);
 
         $this->assertDatabaseHas('links', [
             'short_code' => 'test-link',
             'original_url' => 'https://example.com/test',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
     }
 
@@ -129,7 +131,7 @@ class ApiTest extends TestCase
         ]);
 
         $response = $this->getJson('/api/links', [
-            'Authorization' => 'Bearer ' . $this->plainTextKey
+            'Authorization' => 'Bearer '.$this->plainTextKey,
         ]);
 
         $response->assertStatus(200)
@@ -140,22 +142,22 @@ class ApiTest extends TestCase
                         'short_code',
                         'original_url',
                         'is_active',
-                        'created_at'
-                    ]
+                        'created_at',
+                    ],
                 ],
                 'meta' => [
                     'current_page',
                     'last_page',
                     'per_page',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
     }
 
     public function test_api_enforces_permissions(): void
     {
         // Create API key with only read permissions
-        $readOnlyKey = 'sk_' . str_repeat('readonly', 5) . 'abcdef';
+        $readOnlyKey = 'sk_'.str_repeat('readonly', 5).'abcdef';
         ApiKey::create([
             'name' => 'Read Only Key',
             'key_hash' => hash('sha256', $readOnlyKey),
@@ -165,32 +167,32 @@ class ApiTest extends TestCase
 
         // Try to create a link with read-only key
         $response = $this->postJson('/api/links', [
-            'original_url' => 'https://example.com/test'
+            'original_url' => 'https://example.com/test',
         ], [
-            'Authorization' => 'Bearer ' . $readOnlyKey
+            'Authorization' => 'Bearer '.$readOnlyKey,
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
                 'error' => 'Forbidden',
-                'message' => 'Insufficient permissions'
+                'message' => 'Insufficient permissions',
             ]);
     }
 
     public function test_api_validates_link_creation(): void
     {
         $response = $this->postJson('/api/links', [
-            'original_url' => 'not-a-valid-url'
+            'original_url' => 'not-a-valid-url',
         ], [
-            'Authorization' => 'Bearer ' . $this->plainTextKey
+            'Authorization' => 'Bearer '.$this->plainTextKey,
         ]);
 
         $response->assertStatus(422)
             ->assertJsonStructure([
                 'error',
                 'errors' => [
-                    'original_url'
-                ]
+                    'original_url',
+                ],
             ]);
     }
 
@@ -199,7 +201,7 @@ class ApiTest extends TestCase
         $this->assertNull($this->apiKey->last_used_at);
 
         $this->getJson('/api/links', [
-            'Authorization' => 'Bearer ' . $this->plainTextKey
+            'Authorization' => 'Bearer '.$this->plainTextKey,
         ]);
 
         $this->apiKey->refresh();
@@ -211,11 +213,11 @@ class ApiTest extends TestCase
         $linkData = [
             'url' => 'https://example.com/simple-test',
             'keyword' => 'simple-test',
-            'title' => 'Simple API Test Page'
+            'title' => 'Simple API Test Page',
         ];
 
         $response = $this->postJson('/api/simple', $linkData, [
-            'Authorization' => 'Bearer ' . $this->plainTextKey
+            'Authorization' => 'Bearer '.$this->plainTextKey,
         ]);
 
         $response->assertStatus(201)
@@ -225,22 +227,22 @@ class ApiTest extends TestCase
                     'url',
                     'title',
                     'date',
-                    'ip'
+                    'ip',
                 ],
                 'status',
                 'message',
                 'title',
                 'shorturl',
-                'statusCode'
+                'statusCode',
             ])
             ->assertJson([
                 'url' => [
                     'keyword' => 'simple-test',
                     'url' => 'https://example.com/simple-test',
-                    'title' => 'Simple API Test Page'
+                    'title' => 'Simple API Test Page',
                 ],
                 'status' => 'success',
-                'statusCode' => 200
+                'statusCode' => 200,
             ]);
 
         // Verify the shorturl field contains the full URL
@@ -251,8 +253,7 @@ class ApiTest extends TestCase
         $this->assertDatabaseHas('links', [
             'short_code' => 'simple-test',
             'original_url' => 'https://example.com/simple-test',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
     }
-
 }

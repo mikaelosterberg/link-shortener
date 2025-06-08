@@ -8,21 +8,19 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class GeoRulesRelationManager extends RelationManager
 {
     protected static string $relationship = 'geoRules';
-    
+
     protected static ?string $title = 'Geo-Targeting Rules';
-    
+
     protected static ?string $icon = 'heroicon-o-globe-alt';
 
     public function form(Form $form): Form
     {
         $geolocationService = app(GeolocationService::class);
-        
+
         return $form
             ->schema([
                 Forms\Components\Select::make('match_type')
@@ -35,14 +33,14 @@ class GeoRulesRelationManager extends RelationManager
                     ->required()
                     ->reactive()
                     ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('match_values', [])),
-                    
+
                 Forms\Components\Select::make('match_values')
                     ->label('Match Values')
                     ->multiple()
                     ->required()
                     ->searchable()
                     ->options(function (Forms\Get $get) {
-                        return match($get('match_type')) {
+                        return match ($get('match_type')) {
                             'country' => $this->getCountryOptions(),
                             'continent' => $this->getContinentOptions(),
                             'region' => $this->getRegionOptions(),
@@ -50,7 +48,7 @@ class GeoRulesRelationManager extends RelationManager
                         };
                     })
                     ->helperText(function (Forms\Get $get) {
-                        return match($get('match_type')) {
+                        return match ($get('match_type')) {
                             'country' => 'Select one or more countries',
                             'continent' => 'Select one or more continents',
                             'region' => 'Select predefined regions (e.g., GDPR Zone, North America)',
@@ -58,30 +56,30 @@ class GeoRulesRelationManager extends RelationManager
                         };
                     })
                     ->visible(fn (Forms\Get $get) => $get('match_type') !== null),
-                    
+
                 Forms\Components\TextInput::make('redirect_url')
                     ->label('Redirect URL')
                     ->url()
                     ->required()
                     ->maxLength(255)
                     ->helperText('URL to redirect matching visitors to'),
-                    
+
                 Forms\Components\TextInput::make('priority')
                     ->label('Priority')
                     ->numeric()
                     ->default(0)
                     ->helperText('Lower numbers have higher priority'),
-                    
+
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
                     ->default(true),
-                    
+
                 Forms\Components\Placeholder::make('geo_availability')
                     ->label('Geolocation Status')
-                    ->content($geolocationService->isAvailable() 
-                        ? 'MaxMind database is available' 
+                    ->content($geolocationService->isAvailable()
+                        ? 'MaxMind database is available'
                         : 'MaxMind database not found. Run: php artisan geoip:update')
-                    ->visible(!$geolocationService->isAvailable())
+                    ->visible(! $geolocationService->isAvailable()),
             ]);
     }
 
@@ -95,28 +93,28 @@ class GeoRulesRelationManager extends RelationManager
                     ->sortable()
                     ->badge()
                     ->color('info'),
-                    
+
                 Tables\Columns\TextColumn::make('match_type_display')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state): string => match($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'Countries' => 'success',
                         'Continents' => 'warning',
                         'Regions' => 'info',
                         default => 'gray',
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('match_values_display')
                     ->label('Target')
                     ->wrap()
                     ->searchable(false),
-                    
+
                 Tables\Columns\TextColumn::make('redirect_url')
                     ->label('Redirect To')
                     ->url(fn ($record) => $record->redirect_url, true)
                     ->color('primary')
                     ->limit(50),
-                    
+
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active'),
             ])
@@ -149,7 +147,7 @@ class GeoRulesRelationManager extends RelationManager
             ->emptyStateDescription('Create rules to redirect visitors based on their location')
             ->emptyStateIcon('heroicon-o-globe-alt');
     }
-    
+
     protected function getCountryOptions(): array
     {
         // Common countries - you could expand this or load from a package
@@ -211,7 +209,7 @@ class GeoRulesRelationManager extends RelationManager
             'IE' => 'Ireland',
         ];
     }
-    
+
     protected function getContinentOptions(): array
     {
         return [
@@ -224,7 +222,7 @@ class GeoRulesRelationManager extends RelationManager
             'SA' => 'South America',
         ];
     }
-    
+
     protected function getRegionOptions(): array
     {
         return [

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Link;
-use App\Models\LinkGroup;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -16,7 +15,7 @@ class RedirectTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create a test user for link ownership
         $this->user = User::factory()->create();
     }
@@ -141,9 +140,9 @@ class RedirectTest extends TestCase
         $this->get('/cached');
 
         // Verify the cache contains the link data
-        $cacheKey = "link_data_cached";
+        $cacheKey = 'link_data_cached';
         $this->assertTrue(Cache::has($cacheKey));
-        
+
         $cachedLink = Cache::get($cacheKey);
         $this->assertEquals($link->id, $cachedLink->id);
         $this->assertEquals($link->original_url, $cachedLink->original_url);

@@ -6,10 +6,10 @@ use App\Events\LinkClicked;
 
 /**
  * Example Google Analytics Listener
- * 
+ *
  * This is an example of how users can create custom event listeners
  * to send data to external analytics services.
- * 
+ *
  * To use this listener:
  * 1. Add it to the $listen array in EventServiceProvider
  * 2. Implement your actual Google Analytics integration
@@ -23,7 +23,7 @@ class SendToGoogleAnalytics
     public function handle(LinkClicked $event): void
     {
         // Example implementation - replace with actual GA integration
-        // 
+        //
         // $analytics = app('google.analytics');
         // $analytics->track('event', [
         //     'eventCategory' => 'Link',

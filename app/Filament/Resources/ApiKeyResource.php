@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ApiKeyResource\Pages;
-use App\Filament\Resources\ApiKeyResource\RelationManagers;
 use App\Models\ApiKey;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,16 +10,15 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ApiKeyResource extends Resource
 {
     protected static ?string $model = ApiKey::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
-    
+
     protected static ?string $navigationGroup = 'Settings';
-    
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -73,9 +71,10 @@ class ApiKeyResource extends Resource
                 Tables\Columns\TextColumn::make('api_key')
                     ->label('API Key')
                     ->formatStateUsing(function ($state) {
-                        if (!$state) {
+                        if (! $state) {
                             return 'Legacy Key (Hidden)';
                         }
+
                         return $state;
                     })
                     ->copyable()
@@ -87,11 +86,11 @@ class ApiKeyResource extends Resource
                     ->label('Permissions')
                     ->formatStateUsing(function ($state, $record) {
                         $permissions = $record->permissions;
-                        
-                        if (!$permissions || empty($permissions)) {
+
+                        if (! $permissions || empty($permissions)) {
                             return 'Full Access';
                         }
-                        
+
                         if (is_array($permissions)) {
                             // Map permission keys to readable labels
                             $permissionLabels = [
@@ -105,20 +104,21 @@ class ApiKeyResource extends Resource
                                 'groups:update' => 'G-Update',
                                 'groups:delete' => 'G-Delete',
                             ];
-                            
-                            $labels = array_map(function($perm) use ($permissionLabels) {
+
+                            $labels = array_map(function ($perm) use ($permissionLabels) {
                                 return $permissionLabels[$perm] ?? $perm;
                             }, $permissions);
-                            
+
                             return implode(' • ', $labels);
                         }
-                        
+
                         return 'Full Access';
                     })
                     ->html()
                     ->color(function ($state, $record) {
                         $permissions = $record->permissions;
-                        return !$permissions || empty($permissions) ? 'warning' : 'success';
+
+                        return ! $permissions || empty($permissions) ? 'warning' : 'success';
                     }),
                 Tables\Columns\TextColumn::make('last_used_at')
                     ->label('Last Used')

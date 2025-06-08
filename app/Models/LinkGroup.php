@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class LinkGroup extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'name',
         'description',
@@ -32,7 +32,7 @@ class LinkGroup extends Model
     {
         // Unset any existing default
         self::where('is_default', true)->update(['is_default' => false]);
-        
+
         // Set this group as default
         $this->is_default = true;
         $this->save();

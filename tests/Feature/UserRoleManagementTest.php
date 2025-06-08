@@ -14,7 +14,7 @@ class UserRoleManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create the roles
         Role::create(['name' => 'super_admin']);
         Role::create(['name' => 'admin']);
@@ -32,10 +32,10 @@ class UserRoleManagementTest extends TestCase
         // Test that we can assign a role when creating a user
         $userData = [
             'name' => 'Test User',
-            'email' => 'test@example.com', 
+            'email' => 'test@example.com',
             'password' => 'password123',
             'role' => 'admin',
-            'email_verified' => true
+            'email_verified' => true,
         ];
 
         // Simulate user creation (this would happen in Filament)
@@ -76,7 +76,7 @@ class UserRoleManagementTest extends TestCase
 
         // Try to change own role (this should be prevented in the UI)
         $originalRole = $superAdmin->roles->first()->name;
-        
+
         // Simulate the check that would happen in EditUser page
         if ($originalRole === 'super_admin' && auth()->id() === $superAdmin->id) {
             // Should not change role
@@ -99,8 +99,8 @@ class UserRoleManagementTest extends TestCase
 
         // Get available roles (simulating what UserResource form would show)
         $roles = Role::pluck('name', 'name');
-        
-        if (!auth()->user()->hasRole('super_admin')) {
+
+        if (! auth()->user()->hasRole('super_admin')) {
             $roles = $roles->except('super_admin');
         }
 
@@ -109,11 +109,10 @@ class UserRoleManagementTest extends TestCase
         $this->assertTrue($roles->has('user'));
     }
 
-
     public function test_panel_access_requires_proper_role(): void
     {
         $user = User::factory()->create();
-        
+
         // User with no role should not have panel access
         $this->assertFalse($user->hasRole(['super_admin', 'panel_user', 'admin', 'user']));
 

@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\AbTest;
-use App\Models\AbTestVariant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -27,7 +26,7 @@ class AbTestVariantFactory extends Factory
             'conversion_count' => 0,
         ];
     }
-    
+
     /**
      * Indicate that the variant has performance data.
      */

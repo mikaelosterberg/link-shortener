@@ -14,12 +14,13 @@ class LogClickJobTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Link $link;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->link = Link::create([
             'short_code' => 'job123',
@@ -66,10 +67,10 @@ class LogClickJobTest extends TestCase
         $job->handle();
 
         $click = Click::where('link_id', $this->link->id)->first();
-        
+
         $this->assertNotNull($click);
         $this->assertEquals('8.8.8.8', $click->ip_address);
-        
+
         // Geolocation might return null if database is not available
         // Both null and actual location data are acceptable
         $this->assertTrue(
@@ -94,10 +95,10 @@ class LogClickJobTest extends TestCase
         $job->handle();
 
         $click = Click::where('link_id', $this->link->id)->first();
-        
+
         $this->assertNotNull($click);
         $this->assertEquals('192.168.1.1', $click->ip_address);
-        
+
         // Private IPs typically don't have geolocation data
         $this->assertTrue(
             is_null($click->country) || is_string($click->country)
@@ -167,12 +168,12 @@ class LogClickJobTest extends TestCase
 
         $job1 = new LogClickJob($clickData1);
         $job2 = new LogClickJob($clickData2);
-        
+
         $job1->handle();
         $job2->handle();
 
         $clicks = Click::where('link_id', $this->link->id)->get();
-        
+
         $this->assertCount(2, $clicks);
         $this->assertEquals('192.168.1.100', $clicks->first()->ip_address);
         $this->assertEquals('192.168.1.200', $clicks->last()->ip_address);
@@ -181,7 +182,7 @@ class LogClickJobTest extends TestCase
     public function test_click_timestamps_are_preserved(): void
     {
         $specificTime = now()->subHours(2);
-        
+
         $clickData = [
             'link_id' => $this->link->id,
             'ip_address' => '192.168.1.100',
@@ -194,7 +195,7 @@ class LogClickJobTest extends TestCase
         $job->handle();
 
         $click = Click::where('link_id', $this->link->id)->first();
-        
+
         $this->assertNotNull($click);
         $this->assertEquals(
             $specificTime->format('Y-m-d H:i:s'),

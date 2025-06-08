@@ -2,16 +2,15 @@
 
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Response;
-use Carbon\Carbon;
 
 class ClicksRelationManager extends RelationManager
 {
@@ -92,6 +91,7 @@ class ClicksRelationManager extends RelationManager
                         } elseif (str_contains($state, 'Edge')) {
                             return 'Edge';
                         }
+
                         return 'Other';
                     }),
                 Tables\Columns\TextColumn::make('referer')
@@ -107,12 +107,23 @@ class ClicksRelationManager extends RelationManager
                     ->toggleable()
                     ->tooltip(function ($record) {
                         $utmData = [];
-                        if ($record->utm_source) $utmData[] = "Source: {$record->utm_source}";
-                        if ($record->utm_medium) $utmData[] = "Medium: {$record->utm_medium}";
-                        if ($record->utm_campaign) $utmData[] = "Campaign: {$record->utm_campaign}";
-                        if ($record->utm_term) $utmData[] = "Term: {$record->utm_term}";
-                        if ($record->utm_content) $utmData[] = "Content: {$record->utm_content}";
-                        return !empty($utmData) ? implode("\n", $utmData) : 'No UTM data';
+                        if ($record->utm_source) {
+                            $utmData[] = "Source: {$record->utm_source}";
+                        }
+                        if ($record->utm_medium) {
+                            $utmData[] = "Medium: {$record->utm_medium}";
+                        }
+                        if ($record->utm_campaign) {
+                            $utmData[] = "Campaign: {$record->utm_campaign}";
+                        }
+                        if ($record->utm_term) {
+                            $utmData[] = "Term: {$record->utm_term}";
+                        }
+                        if ($record->utm_content) {
+                            $utmData[] = "Content: {$record->utm_content}";
+                        }
+
+                        return ! empty($utmData) ? implode("\n", $utmData) : 'No UTM data';
                     }),
                 Tables\Columns\TextColumn::make('utm_source')
                     ->label('Source')
@@ -172,10 +183,10 @@ class ClicksRelationManager extends RelationManager
                 Tables\Filters\Filter::make('has_utm')
                     ->query(fn (Builder $query) => $query->where(function ($q) {
                         $q->whereNotNull('utm_source')
-                          ->orWhereNotNull('utm_medium')
-                          ->orWhereNotNull('utm_campaign')
-                          ->orWhereNotNull('utm_term')
-                          ->orWhereNotNull('utm_content');
+                            ->orWhereNotNull('utm_medium')
+                            ->orWhereNotNull('utm_campaign')
+                            ->orWhereNotNull('utm_term')
+                            ->orWhereNotNull('utm_content');
                     }))
                     ->label('Has UTM Data'),
                 Tables\Filters\Filter::make('date_range')
@@ -198,15 +209,15 @@ class ClicksRelationManager extends RelationManager
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        
+
                         if ($data['from'] ?? null) {
-                            $indicators[] = 'From ' . Carbon::parse($data['from'])->toFormattedDateString();
+                            $indicators[] = 'From '.Carbon::parse($data['from'])->toFormattedDateString();
                         }
-                        
+
                         if ($data['until'] ?? null) {
-                            $indicators[] = 'Until ' . Carbon::parse($data['until'])->toFormattedDateString();
+                            $indicators[] = 'Until '.Carbon::parse($data['until'])->toFormattedDateString();
                         }
-                        
+
                         return $indicators;
                     })
                     ->label('Date Range'),
@@ -218,29 +229,30 @@ class ClicksRelationManager extends RelationManager
                     ->color('info')
                     ->action(function () {
                         $link = $this->getOwnerRecord();
-                        
+
                         // Get the filtered data using the same query as the table
                         $query = $this->getFilteredTableQuery();
                         $clicks = $query->with('abTestVariant')->get();
-                        
+
                         if ($clicks->isEmpty()) {
                             Notification::make()
                                 ->title('No data to export')
                                 ->warning()
                                 ->send();
+
                             return;
                         }
-                        
-                        $filename = 'clicks-' . $link->short_code . '-' . now()->format('Y-m-d-H-i-s') . '.csv';
-                        
+
+                        $filename = 'clicks-'.$link->short_code.'-'.now()->format('Y-m-d-H-i-s').'.csv';
+
                         $headers = [
                             'Content-Type' => 'text/csv',
-                            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
                         ];
-                        
-                        $callback = function() use ($clicks) {
+
+                        $callback = function () use ($clicks) {
                             $file = fopen('php://output', 'w');
-                            
+
                             // CSV Headers
                             fputcsv($file, [
                                 'Date & Time',
@@ -256,7 +268,7 @@ class ClicksRelationManager extends RelationManager
                                 'UTM Content',
                                 'A/B Variant',
                             ]);
-                            
+
                             // Export data
                             foreach ($clicks as $click) {
                                 fputcsv($file, [
@@ -274,10 +286,10 @@ class ClicksRelationManager extends RelationManager
                                     $click->abTestVariant?->name ?? '',
                                 ]);
                             }
-                            
+
                             fclose($file);
                         };
-                        
+
                         return Response::stream($callback, 200, $headers);
                     })
                     ->tooltip('Export filtered click data as CSV'),

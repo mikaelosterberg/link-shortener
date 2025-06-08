@@ -8,10 +8,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Example Custom Tracking Middleware
- * 
+ *
  * This is an example of how users can create custom middleware
  * for additional tracking or processing of requests.
- * 
+ *
  * To use this middleware:
  * 1. Uncomment the registration in CustomizationServiceProvider
  * 2. Add your custom tracking logic in the handle method

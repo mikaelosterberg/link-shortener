@@ -2,25 +2,24 @@
 
 namespace App\Providers\Filament;
 
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
-use Filament\Navigation\MenuItem;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\Support\Assets\Css;
-use Filament\Support\Facades\FilamentAsset;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -85,7 +84,7 @@ class AdminPanelProvider extends PanelProvider
                     ->gridColumns([
                         'default' => 1,
                         'sm' => 2,
-                        'lg' => 3
+                        'lg' => 3,
                     ])
                     ->sectionColumnSpan(1)
                     ->checkboxListColumns([
