@@ -4,6 +4,8 @@ namespace App\Filament\Widgets;
 
 use App\Models\Click;
 use App\Models\Link;
+use App\Services\TimezoneService;
+use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -14,14 +16,33 @@ class OverviewStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Total links
-        $totalLinks = Link::count();
-        $activeLinks = Link::where('is_active', true)->count();
+        // Get user's timezone for display, but use simpler date calculations for reliability
+        $userTimezone = TimezoneService::getUserTimezone();
+        
+        try {
+            $userToday = Carbon::now($userTimezone)->startOfDay();
+            $userYesterday = $userToday->copy()->subDay();
+            $userWeekAgo = $userToday->copy()->subDays(7);
 
-        // Total clicks
-        $totalClicks = Click::count();
-        $todayClicks = Click::whereDate('clicked_at', today())->count();
-        $weekClicks = Click::where('clicked_at', '>=', now()->subDays(7))->count();
+            // Total links
+            $totalLinks = Link::count();
+            $activeLinks = Link::where('is_active', true)->count();
+
+            // Total clicks (timezone-aware)
+            $totalClicks = Click::count();
+            $todayClicks = Click::whereBetween('clicked_at', [
+                $userToday->utc(),
+                $userToday->copy()->endOfDay()->utc()
+            ])->count();
+            $weekClicks = Click::where('clicked_at', '>=', $userWeekAgo->utc())->count();
+        } catch (\Exception $e) {
+            // Fallback to UTC calculations if timezone conversion fails
+            $totalLinks = Link::count();
+            $activeLinks = Link::where('is_active', true)->count();
+            $totalClicks = Click::count();
+            $todayClicks = Click::whereDate('clicked_at', today())->count();
+            $weekClicks = Click::where('clicked_at', '>=', now()->subDays(7))->count();
+        }
 
         // Average clicks per link
         $avgClicksPerLink = $totalLinks > 0 ? round($totalClicks / $totalLinks, 1) : 0;
@@ -61,8 +82,9 @@ class OverviewStatsWidget extends BaseWidget
 
     private function getClickRate(): string
     {
-        $yesterdayClicks = Click::whereDate('clicked_at', today()->subDay())->count();
+        // Use simple UTC calculations for reliability
         $todayClicks = Click::whereDate('clicked_at', today())->count();
+        $yesterdayClicks = Click::whereDate('clicked_at', today()->subDay())->count();
 
         if ($yesterdayClicks == 0) {
             return $todayClicks > 0 ? '+100%' : '0%';
@@ -75,6 +97,7 @@ class OverviewStatsWidget extends BaseWidget
 
     private function getClickRateDescription(): string
     {
+        // For now, let's use simple UTC calculations to ensure it works
         $todayClicks = Click::whereDate('clicked_at', today())->count();
         $yesterdayClicks = Click::whereDate('clicked_at', today()->subDay())->count();
 

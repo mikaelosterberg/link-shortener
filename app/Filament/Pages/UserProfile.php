@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -33,6 +34,7 @@ class UserProfile extends Page
         $this->profileData = [
             'name' => $user->name,
             'email' => $user->email,
+            'timezone' => $user->timezone ?? 'UTC',
         ];
     }
 
@@ -53,6 +55,19 @@ class UserProfile extends Page
                             ->required()
                             ->maxLength(255)
                             ->unique('users', 'email', auth()->user()),
+                        Select::make('timezone')
+                            ->label('Timezone')
+                            ->options(function () {
+                                $timezones = [];
+                                foreach (timezone_identifiers_list() as $timezone) {
+                                    $timezones[$timezone] = $timezone;
+                                }
+                                return $timezones;
+                            })
+                            ->default('UTC')
+                            ->searchable()
+                            ->required()
+                            ->helperText('Select your preferred timezone for displaying dates and times'),
                     ])
                     ->columns(2),
             ])
@@ -101,6 +116,7 @@ class UserProfile extends Page
         auth()->user()->update([
             'name' => $data['name'],
             'email' => $data['email'],
+            'timezone' => $data['timezone'],
         ]);
 
         Notification::make()

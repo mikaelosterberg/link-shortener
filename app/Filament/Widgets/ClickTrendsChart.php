@@ -3,6 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Click;
+use App\Services\TimezoneService;
+use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
 
@@ -19,21 +21,25 @@ class ClickTrendsChart extends ChartWidget
     protected function getData(): array
     {
         $days = (int) $this->filter;
+        $userTimezone = TimezoneService::getUserTimezone();
 
-        // Get daily click counts for the specified period
-        $clickData = Click::select(
-            DB::raw('DATE(clicked_at) as date'),
-            DB::raw('COUNT(*) as clicks')
-        )
-            ->where('clicked_at', '>=', now()->subDays($days))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        // Get the date range in user's timezone, but convert to UTC for database queries
+        $startDate = Carbon::now($userTimezone)->subDays($days)->startOfDay()->utc();
+        $endDate = Carbon::now($userTimezone)->endOfDay()->utc();
 
-        // Create array of all dates in range to fill gaps
+        // Get all clicks in the period and group them by date in user's timezone
+        $clicks = Click::whereBetween('clicked_at', [$startDate, $endDate])->get();
+        
+        $clickData = $clicks->groupBy(function ($click) use ($userTimezone) {
+            return Carbon::parse($click->clicked_at)->setTimezone($userTimezone)->format('Y-m-d');
+        })->map(function ($group, $date) {
+            return (object) ['date' => $date, 'clicks' => $group->count()];
+        });
+
+        // Create array of all dates in range to fill gaps (in user timezone)
         $dateRange = collect();
         for ($i = $days - 1; $i >= 0; $i--) {
-            $dateRange->push(now()->subDays($i)->format('Y-m-d'));
+            $dateRange->push(Carbon::now($userTimezone)->subDays($i)->format('Y-m-d'));
         }
 
         // Map click data to dates, filling missing dates with 0
@@ -44,7 +50,7 @@ class ClickTrendsChart extends ChartWidget
         });
 
         $labels = $dateRange->map(function ($date) {
-            return \Carbon\Carbon::parse($date)->format('M j');
+            return Carbon::parse($date)->format('M j');
         });
 
         return [

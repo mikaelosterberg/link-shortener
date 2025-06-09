@@ -25,6 +25,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'timezone',
     ];
 
     /**
@@ -54,5 +55,25 @@ class User extends Authenticatable implements FilamentUser
     {
         // Only users with the panel_user role or super_admin can access
         return $this->hasRole(['super_admin', 'panel_user', 'admin', 'user']);
+    }
+
+    /**
+     * Convert a UTC datetime to the user's timezone
+     */
+    public function convertToUserTimezone($datetime)
+    {
+        if (!$datetime) {
+            return null;
+        }
+
+        return $datetime->setTimezone(new \DateTimeZone($this->timezone ?? 'UTC'));
+    }
+
+    /**
+     * Get the user's timezone object
+     */
+    public function getTimezoneObject()
+    {
+        return new \DateTimeZone($this->timezone ?? 'UTC');
     }
 }

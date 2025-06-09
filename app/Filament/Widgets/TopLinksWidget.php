@@ -48,7 +48,10 @@ class TopLinksWidget extends BaseWidget
                 TextColumn::make('original_url')
                     ->label('Destination URL')
                     ->limit(50)
-                    ->tooltip(fn (Link $record): string => $record->original_url),
+                    ->tooltip('Click to view stats')
+                    ->url(fn (Link $record): string => route('filament.admin.resources.links.edit', $record))
+                    ->color('primary')
+                    ->weight('medium'),
 
                 TextColumn::make('clicks_count')
                     ->label(fn () => 'Clicks ('.$this->getFilterLabel().')')

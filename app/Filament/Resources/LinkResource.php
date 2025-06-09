@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\LinkResource\Pages;
 use App\Filament\Resources\LinkResource\RelationManagers;
 use App\Models\Link;
+use App\Services\TimezoneService;
 use Filament\Forms;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Form;
@@ -204,14 +205,14 @@ class LinkResource extends Resource
                         return sprintf(
                             '%s - Last checked: %s',
                             $record->health_check_message ?? 'Unknown',
-                            $record->last_checked_at->diffForHumans()
+                            TimezoneService::diffForUser($record->last_checked_at)
                         );
                     }),
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active'),
                 Tables\Columns\TextColumn::make('expires_at')
                     ->label('Expires')
-                    ->dateTime('M j, Y')
+                    ->formatStateUsing(fn ($state) => $state ? TimezoneService::formatForUser($state, 'M j, Y') : 'Never')
                     ->placeholder('Never')
                     ->color(fn ($record) => $record->isExpired() ? 'danger' : null)
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -221,7 +222,7 @@ class LinkResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
-                    ->dateTime('M j, Y')
+                    ->formatStateUsing(fn ($state) => TimezoneService::formatForUser($state, 'M j, Y'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

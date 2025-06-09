@@ -56,6 +56,8 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\GeographicStatsWidget::class,
                 \App\Filament\Widgets\ClickTrendsChart::class,
                 \App\Filament\Widgets\TopLinksWidget::class,
+                \App\Filament\Widgets\TrafficTypesWidget::class,
+                \App\Filament\Widgets\TopReferrersWidget::class,
                 \App\Filament\Widgets\UtmCampaignStatsWidget::class,
                 \App\Filament\Widgets\AbTestStatsWidget::class,
             ])

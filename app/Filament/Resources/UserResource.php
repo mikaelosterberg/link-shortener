@@ -36,6 +36,20 @@ class UserResource extends Resource
                     ->unique(User::class, 'email', ignoreRecord: true)
                     ->maxLength(255),
 
+                Forms\Components\Select::make('timezone')
+                    ->label('Timezone')
+                    ->options(function () {
+                        $timezones = [];
+                        foreach (timezone_identifiers_list() as $timezone) {
+                            $timezones[$timezone] = $timezone;
+                        }
+                        return $timezones;
+                    })
+                    ->default('UTC')
+                    ->searchable()
+                    ->required()
+                    ->helperText('Select your preferred timezone for displaying dates and times'),
+
                 Forms\Components\Select::make('roles')
                     ->label('Roles')
                     ->multiple()
@@ -77,6 +91,10 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('timezone')
+                    ->sortable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Role')

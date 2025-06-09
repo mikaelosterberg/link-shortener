@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
+use App\Services\TimezoneService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -135,7 +136,7 @@ class ClicksRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('clicked_at')
                     ->label('Time')
-                    ->dateTime('M j, Y g:i A')
+                    ->formatStateUsing(fn ($state) => TimezoneService::formatForUser($state, 'M j, Y g:i A'))
                     ->sortable(),
             ])
             ->defaultSort('clicked_at', 'desc')
@@ -151,10 +152,25 @@ class ClicksRelationManager extends RelationManager
                     ->query(fn (Builder $query) => $query->whereNotNull('country'))
                     ->label('Has Location Data'),
                 Tables\Filters\Filter::make('today')
-                    ->query(fn (Builder $query) => $query->whereDate('clicked_at', today()))
+                    ->query(function (Builder $query) {
+                        $userTimezone = TimezoneService::getUserTimezone();
+                        $userToday = Carbon::now($userTimezone)->startOfDay();
+                        return $query->whereBetween('clicked_at', [
+                            $userToday->utc(),
+                            $userToday->copy()->endOfDay()->utc()
+                        ]);
+                    })
                     ->label('Today'),
                 Tables\Filters\Filter::make('this_week')
-                    ->query(fn (Builder $query) => $query->whereBetween('clicked_at', [now()->startOfWeek(), now()->endOfWeek()]))
+                    ->query(function (Builder $query) {
+                        $userTimezone = TimezoneService::getUserTimezone();
+                        $startOfWeek = Carbon::now($userTimezone)->startOfWeek();
+                        $endOfWeek = Carbon::now($userTimezone)->endOfWeek();
+                        return $query->whereBetween('clicked_at', [
+                            $startOfWeek->utc(),
+                            $endOfWeek->utc()
+                        ]);
+                    })
                     ->label('This Week'),
                 Tables\Filters\SelectFilter::make('utm_source')
                     ->options(function () {
@@ -272,7 +288,7 @@ class ClicksRelationManager extends RelationManager
                             // Export data
                             foreach ($clicks as $click) {
                                 fputcsv($file, [
-                                    $click->clicked_at->format('Y-m-d H:i:s'),
+                                    TimezoneService::formatForUser($click->clicked_at, 'Y-m-d H:i:s'),
                                     $click->ip_address,
                                     $click->country ?? '',
                                     $click->city ?? '',
