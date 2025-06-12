@@ -422,6 +422,28 @@ class LinkResource extends Resource
                         ->modalSubmitActionLabel('Reset Counts')
                         ->deselectRecordsAfterCompletion()
                         ->color('warning'),
+                    Tables\Actions\BulkAction::make('delete_all_clicks')
+                        ->label('Delete All Click Data')
+                        ->icon('heroicon-o-trash')
+                        ->action(function ($records) {
+                            $totalDeleted = 0;
+                            foreach ($records as $record) {
+                                $deleted = $record->clicks()->delete();
+                                $totalDeleted += $deleted;
+                                $record->update(['click_count' => 0]);
+                            }
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title("Deleted {$totalDeleted} click records")
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete All Click Data')
+                        ->modalDescription('This will permanently delete ALL click tracking data for the selected links and reset their click counts to 0. This action cannot be undone.')
+                        ->modalSubmitActionLabel('Delete All Clicks')
+                        ->deselectRecordsAfterCompletion()
+                        ->color('danger'),
                 ]),
             ]);
     }

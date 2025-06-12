@@ -311,13 +311,74 @@ class ClicksRelationManager extends RelationManager
                         return Response::stream($callback, 200, $headers);
                     })
                     ->tooltip('Export filtered click data as CSV'),
+                Tables\Actions\Action::make('delete_all_clicks')
+                    ->label('Delete All Clicks')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->action(function () {
+                        $link = $this->getOwnerRecord();
+                        $deletedCount = $link->clicks()->count();
+                        $link->clicks()->delete();
+                        $link->update(['click_count' => 0]);
+                        
+                        Notification::make()
+                            ->title("Deleted {$deletedCount} click records for this link")
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete All Click Data')
+                    ->modalDescription('This will permanently delete ALL click tracking data for this link and reset its click count to 0. This action cannot be undone.')
+                    ->modalSubmitActionLabel('Delete All Clicks')
+                    ->tooltip('Delete all click data for this link'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->action(function ($record) {
+                        // Delete the record
+                        $record->delete();
+                        
+                        // Update the link's click count by subtracting 1
+                        $link = $this->getOwnerRecord();
+                        $currentCount = $link->click_count;
+                        $newCount = max(0, $currentCount - 1);
+                        $link->update(['click_count' => $newCount]);
+                        
+                        Notification::make()
+                            ->title('Click record deleted and link count updated')
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete Click Record')
+                    ->modalDescription('This will permanently delete this click record and update the link\'s click count. This action cannot be undone.')
+                    ->successNotificationTitle(null), // Disable default notification
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function ($records) {
+                            $deletedCount = $records->count();
+                            
+                            // Delete the records
+                            $records->each(fn ($record) => $record->delete());
+                            
+                            // Update the link's click count by subtracting deleted clicks
+                            $link = $this->getOwnerRecord();
+                            $currentCount = $link->click_count;
+                            $newCount = max(0, $currentCount - $deletedCount);
+                            $link->update(['click_count' => $newCount]);
+                            
+                            Notification::make()
+                                ->title("Deleted {$deletedCount} click records and updated link count")
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete Selected Click Records')
+                        ->modalDescription('This will permanently delete the selected click records and update the link\'s click count accordingly. This action cannot be undone.')
+                        ->successNotificationTitle(null), // Disable default notification since we have custom one
                 ]),
             ]);
     }
