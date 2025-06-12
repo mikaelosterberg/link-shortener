@@ -38,6 +38,7 @@ class ClickFactory extends Factory
             'utm_campaign' => $this->faker->optional()->words(2, true),
             'utm_term' => $this->faker->optional()->words(1, true),
             'utm_content' => $this->faker->optional()->words(2, true),
+            'ab_test_variant_id' => null, // Can be set explicitly in tests
         ];
     }
 
@@ -73,6 +74,16 @@ class ClickFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'clicked_at' => $this->faker->dateTimeBetween('-1 week', 'now'),
+        ]);
+    }
+
+    /**
+     * Indicate that the click is for an A/B test variant.
+     */
+    public function forVariant($variantId): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'ab_test_variant_id' => $variantId,
         ]);
     }
 }

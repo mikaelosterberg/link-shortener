@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Services\GeolocationService;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GeoRule extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'link_id',
         'match_type',
