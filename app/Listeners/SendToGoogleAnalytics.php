@@ -35,13 +35,14 @@ class SendToGoogleAnalytics
         //     ]
         // ]);
 
-        // For now, just log to demonstrate the concept
-        logger('Link clicked - would send to GA', [
-            'link_id' => $event->link->id,
-            'short_code' => $event->link->short_code,
-            'destination' => $event->link->original_url,
-            'user_agent' => $event->request->userAgent(),
-            'referer' => $event->request->header('referer'),
-        ]);
+        // For now, just log to demonstrate the concept (disabled in production)
+        // Uncomment the line below to enable debug logging:
+        // logger('Link clicked - would send to GA', [
+        //     'link_id' => $event->link->id,
+        //     'short_code' => $event->link->short_code,
+        //     'destination' => $event->link->original_url,
+        //     'user_agent' => $event->request->userAgent(),
+        //     'referer' => $event->request->header('referer'),
+        // ]);
     }
 }

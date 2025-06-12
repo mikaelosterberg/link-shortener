@@ -40,10 +40,10 @@ class TrafficTypesWidget extends BaseWidget
         // Bot traffic detection (basic)
         $botClicks = Click::where(function ($query) {
             $query->where('user_agent', 'like', '%bot%')
-                  ->orWhere('user_agent', 'like', '%crawler%')
-                  ->orWhere('user_agent', 'like', '%spider%')
-                  ->orWhere('user_agent', 'like', '%Googlebot%')
-                  ->orWhere('user_agent', 'like', '%Bingbot%');
+                ->orWhere('user_agent', 'like', '%crawler%')
+                ->orWhere('user_agent', 'like', '%spider%')
+                ->orWhere('user_agent', 'like', '%Googlebot%')
+                ->orWhere('user_agent', 'like', '%Bingbot%');
         })->count();
         $botPercentage = round(($botClicks / $totalClicks) * 100, 1);
 

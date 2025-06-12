@@ -62,7 +62,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function convertToUserTimezone($datetime)
     {
-        if (!$datetime) {
+        if (! $datetime) {
             return null;
         }
 

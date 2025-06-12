@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Click;
-use App\Services\TimezoneService;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -36,6 +35,7 @@ class TopReferrersWidget extends BaseWidget
                     ->label('Referrer')
                     ->formatStateUsing(function ($state) {
                         $host = parse_url($state, PHP_URL_HOST);
+
                         return $host ?: 'Unknown';
                     })
                     ->description(fn ($state) => $state)
@@ -52,6 +52,7 @@ class TopReferrersWidget extends BaseWidget
                     ->numeric()
                     ->description(function ($record) {
                         $ratio = $record->unique_visitors > 0 ? round($record->clicks / $record->unique_visitors, 1) : 0;
+
                         return "Avg {$ratio} clicks per visitor";
                     }),
 
@@ -59,7 +60,8 @@ class TopReferrersWidget extends BaseWidget
                     ->label('Share')
                     ->getStateUsing(function ($record) {
                         $total = Click::whereNotNull('referer')->where('referer', '!=', '')->count();
-                        return $total > 0 ? round(($record->clicks / $total) * 100, 1) . '%' : '0%';
+
+                        return $total > 0 ? round(($record->clicks / $total) * 100, 1).'%' : '0%';
                     })
                     ->badge()
                     ->color('primary'),

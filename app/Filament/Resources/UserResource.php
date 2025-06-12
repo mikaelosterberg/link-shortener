@@ -43,6 +43,7 @@ class UserResource extends Resource
                         foreach (timezone_identifiers_list() as $timezone) {
                             $timezones[$timezone] = $timezone;
                         }
+
                         return $timezones;
                     })
                     ->default('UTC')

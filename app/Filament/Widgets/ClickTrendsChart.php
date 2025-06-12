@@ -6,7 +6,6 @@ use App\Models\Click;
 use App\Services\TimezoneService;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 class ClickTrendsChart extends ChartWidget
 {
@@ -29,7 +28,7 @@ class ClickTrendsChart extends ChartWidget
 
         // Get all clicks in the period and group them by date in user's timezone
         $clicks = Click::whereBetween('clicked_at', [$startDate, $endDate])->get();
-        
+
         $clickData = $clicks->groupBy(function ($click) use ($userTimezone) {
             return Carbon::parse($click->clicked_at)->setTimezone($userTimezone)->format('Y-m-d');
         })->map(function ($group, $date) {

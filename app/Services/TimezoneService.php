@@ -12,12 +12,12 @@ class TimezoneService
      */
     public static function formatForUser($datetime, string $format = 'M j, Y g:i A'): ?string
     {
-        if (!$datetime) {
+        if (! $datetime) {
             return null;
         }
 
         $user = Auth::user();
-        if (!$user || !$user->timezone) {
+        if (! $user || ! $user->timezone) {
             return Carbon::parse($datetime)->format($format);
         }
 
@@ -31,11 +31,11 @@ class TimezoneService
      */
     public static function formatForSpecificUser($datetime, $user, string $format = 'M j, Y g:i A'): ?string
     {
-        if (!$datetime) {
+        if (! $datetime) {
             return null;
         }
 
-        if (!$user || !$user->timezone) {
+        if (! $user || ! $user->timezone) {
             return Carbon::parse($datetime)->format($format);
         }
 
@@ -49,12 +49,12 @@ class TimezoneService
      */
     public static function convertForUser($datetime): ?Carbon
     {
-        if (!$datetime) {
+        if (! $datetime) {
             return null;
         }
 
         $user = Auth::user();
-        if (!$user || !$user->timezone) {
+        if (! $user || ! $user->timezone) {
             return Carbon::parse($datetime);
         }
 
@@ -66,12 +66,12 @@ class TimezoneService
      */
     public static function diffForUser($datetime): ?string
     {
-        if (!$datetime) {
+        if (! $datetime) {
             return null;
         }
 
         $user = Auth::user();
-        if (!$user || !$user->timezone) {
+        if (! $user || ! $user->timezone) {
             return Carbon::parse($datetime)->diffForHumans();
         }
 
@@ -86,6 +86,7 @@ class TimezoneService
     public static function getUserTimezone(): string
     {
         $user = Auth::user();
+
         return $user && $user->timezone ? $user->timezone : 'UTC';
     }
 
@@ -100,11 +101,11 @@ class TimezoneService
         foreach ($timezones as $timezone) {
             $parts = explode('/', $timezone);
             $region = $parts[0];
-            
-            if (!isset($grouped[$region])) {
+
+            if (! isset($grouped[$region])) {
                 $grouped[$region] = [];
             }
-            
+
             $grouped[$region][$timezone] = $timezone;
         }
 

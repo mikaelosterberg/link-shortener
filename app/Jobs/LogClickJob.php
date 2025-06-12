@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 
 class LogClickJob implements ShouldQueue
 {
@@ -53,6 +54,13 @@ class LogClickJob implements ShouldQueue
             'utm_content' => $this->clickData['utm_content'] ?? null,
             'ab_test_variant_id' => $this->clickData['ab_test_variant_id'] ?? null,
         ]);
+
+        // Increment click count if flag is set (for links without click limits)
+        if (! empty($this->clickData['increment_click_count'])) {
+            DB::table('links')
+                ->where('id', $this->clickData['link_id'])
+                ->increment('click_count');
+        }
     }
 
     /**

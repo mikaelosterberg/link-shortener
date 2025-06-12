@@ -155,9 +155,10 @@ class ClicksRelationManager extends RelationManager
                     ->query(function (Builder $query) {
                         $userTimezone = TimezoneService::getUserTimezone();
                         $userToday = Carbon::now($userTimezone)->startOfDay();
+
                         return $query->whereBetween('clicked_at', [
                             $userToday->utc(),
-                            $userToday->copy()->endOfDay()->utc()
+                            $userToday->copy()->endOfDay()->utc(),
                         ]);
                     })
                     ->label('Today'),
@@ -166,9 +167,10 @@ class ClicksRelationManager extends RelationManager
                         $userTimezone = TimezoneService::getUserTimezone();
                         $startOfWeek = Carbon::now($userTimezone)->startOfWeek();
                         $endOfWeek = Carbon::now($userTimezone)->endOfWeek();
+
                         return $query->whereBetween('clicked_at', [
                             $startOfWeek->utc(),
-                            $endOfWeek->utc()
+                            $endOfWeek->utc(),
                         ]);
                     })
                     ->label('This Week'),

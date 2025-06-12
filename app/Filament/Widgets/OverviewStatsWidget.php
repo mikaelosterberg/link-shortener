@@ -18,7 +18,7 @@ class OverviewStatsWidget extends BaseWidget
     {
         // Get user's timezone for display, but use simpler date calculations for reliability
         $userTimezone = TimezoneService::getUserTimezone();
-        
+
         try {
             $userToday = Carbon::now($userTimezone)->startOfDay();
             $userYesterday = $userToday->copy()->subDay();
@@ -32,7 +32,7 @@ class OverviewStatsWidget extends BaseWidget
             $totalClicks = Click::count();
             $todayClicks = Click::whereBetween('clicked_at', [
                 $userToday->utc(),
-                $userToday->copy()->endOfDay()->utc()
+                $userToday->copy()->endOfDay()->utc(),
             ])->count();
             $weekClicks = Click::where('clicked_at', '>=', $userWeekAgo->utc())->count();
         } catch (\Exception $e) {

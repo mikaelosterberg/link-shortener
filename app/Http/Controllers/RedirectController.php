@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Events\LinkClicked;
 use App\Events\LinkNotFound;
-use App\Jobs\LogClickJob;
 use App\Models\Link;
+use App\Services\ClickTrackingService;
 use App\Services\GeolocationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class RedirectController extends Controller
 {
-    public function redirect(string $shortCode, GeolocationService $geoService)
+    public function redirect(string $shortCode, GeolocationService $geoService, ClickTrackingService $clickTracking)
     {
         // Cache the link data, but not the redirect decision
         $cacheKey = "link_data_{$shortCode}";
@@ -141,30 +141,35 @@ class RedirectController extends Controller
         // Dispatch click event for analytics/plugins
         event(new LinkClicked($link, request()));
 
-        // Log click asynchronously with UTM parameters and A/B test data
-        if (config('shortener.analytics.async_tracking', true)) {
-            LogClickJob::dispatch([
-                'link_id' => $link->id,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'referer' => request()->header('referer'),
-                'clicked_at' => now(),
-                'utm_source' => $utmParams['utm_source'] ?? null,
-                'utm_medium' => $utmParams['utm_medium'] ?? null,
-                'utm_campaign' => $utmParams['utm_campaign'] ?? null,
-                'utm_term' => $utmParams['utm_term'] ?? null,
-                'utm_content' => $utmParams['utm_content'] ?? null,
-                'ab_test_variant_id' => $selectedVariant?->id,
-            ])->onQueue('clicks');
-        }
-
         // Increment A/B test variant counter if applicable
         if ($selectedVariant) {
             $selectedVariant->incrementClicks();
         }
 
-        // Increment counter asynchronously
-        DB::table('links')->where('id', $link->id)->increment('click_count');
+        // Prepare click data
+        $clickData = [
+            'link_id' => $link->id,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'referer' => request()->header('referer'),
+            'clicked_at' => now()->format('Y-m-d H:i:s'),
+            'utm_source' => $utmParams['utm_source'] ?? null,
+            'utm_medium' => $utmParams['utm_medium'] ?? null,
+            'utm_campaign' => $utmParams['utm_campaign'] ?? null,
+            'utm_term' => $utmParams['utm_term'] ?? null,
+            'utm_content' => $utmParams['utm_content'] ?? null,
+            'ab_test_variant_id' => $selectedVariant?->id,
+            'increment_click_count' => $link->click_limit === null, // Only increment async if no click limit
+        ];
+
+        // Track click using configured method
+        $clickTracking->trackClick($link, $clickData);
+
+        // Handle synchronous click count increment for links with limits
+        if ($link->click_limit !== null) {
+            // Must increment synchronously for accurate limit enforcement
+            DB::table('links')->where('id', $link->id)->increment('click_count');
+        }
 
         return redirect($targetUrl, $link->redirect_type);
     }

@@ -21,7 +21,7 @@ class UtmCampaignStatsWidget extends BaseWidget
     public function getTableRecordKey($record): string
     {
         // Create a unique key from the combination of UTM parameters
-        return md5($record->utm_campaign . '|' . $record->utm_source . '|' . $record->utm_medium);
+        return md5($record->utm_campaign.'|'.$record->utm_source.'|'.$record->utm_medium);
     }
 
     public function table(Table $table): Table

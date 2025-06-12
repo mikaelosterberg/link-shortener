@@ -70,6 +70,28 @@ return [
         // Whether to track clicks asynchronously
         'async_tracking' => true,
 
+        // Click tracking method for high-traffic scenarios
+        // Options: 'queue' (default), 'redis', 'none'
+        // - 'queue': Uses Laravel queue (database/redis based on QUEUE_CONNECTION)
+        // - 'redis': Direct Redis storage with batch processing (requires Redis)
+        // - 'none': Only increment count, skip detailed click tracking
+        'click_tracking_method' => env('CLICK_TRACKING_METHOD', 'queue'),
+
+        // Redis settings for 'redis' tracking method
+        'redis' => [
+            // Redis key prefix for click data
+            'prefix' => 'clicks:',
+
+            // Batch size - how many clicks to process at once when triggered
+            'batch_size' => env('REDIS_BATCH_SIZE', 500),
+
+            // Trigger threshold - start processing when this many clicks are pending
+            'trigger_threshold' => env('REDIS_TRIGGER_THRESHOLD', 100),
+
+            // TTL for Redis click data (seconds)
+            'ttl' => 86400, // 24 hours
+        ],
+
         // Custom analytics providers to notify
         'providers' => [
             // 'custom_provider' => App\Analytics\CustomProvider::class,
