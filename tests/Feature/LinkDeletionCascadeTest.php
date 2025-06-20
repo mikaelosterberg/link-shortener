@@ -35,7 +35,7 @@ class LinkDeletionCascadeTest extends TestCase
 
         // Create related data
         $clicks = Click::factory()->count(5)->create(['link_id' => $link->id]);
-        
+
         $geoRule = GeoRule::factory()->create([
             'link_id' => $link->id,
             'match_type' => 'country',
@@ -56,7 +56,7 @@ class LinkDeletionCascadeTest extends TestCase
 
         $variant2 = AbTestVariant::factory()->create([
             'ab_test_id' => $abTest->id,
-            'name' => 'Variant B', 
+            'name' => 'Variant B',
             'url' => 'https://b.example.com',
         ]);
 
@@ -77,7 +77,7 @@ class LinkDeletionCascadeTest extends TestCase
 
         // Verify the link itself is deleted
         $this->assertNull(Link::find($link->id));
-        
+
         // Verify the group still exists (should not be deleted)
         $this->assertNotNull(LinkGroup::find($group->id));
     }
@@ -103,7 +103,7 @@ class LinkDeletionCascadeTest extends TestCase
 
         // Verify variants are cascaded and deleted
         $this->assertEquals(0, AbTestVariant::where('ab_test_id', $abTest->id)->count());
-        
+
         // Verify link and group still exist
         $this->assertNotNull(Link::find($link->id));
         $this->assertNotNull(LinkGroup::find($group->id));
@@ -143,14 +143,14 @@ class LinkDeletionCascadeTest extends TestCase
     public function test_bulk_link_deletion_cascades_properly()
     {
         $group = LinkGroup::factory()->create();
-        
+
         $link1 = Link::factory()->create(['group_id' => $group->id]);
         $link2 = Link::factory()->create(['group_id' => $group->id]);
 
         // Create related data for both links
         Click::factory()->count(3)->create(['link_id' => $link1->id]);
         Click::factory()->count(2)->create(['link_id' => $link2->id]);
-        
+
         GeoRule::factory()->create(['link_id' => $link1->id]);
         GeoRule::factory()->create(['link_id' => $link2->id]);
 
@@ -200,7 +200,7 @@ class LinkDeletionCascadeTest extends TestCase
     {
         $group = LinkGroup::factory()->create();
         $link = Link::factory()->create(['group_id' => $group->id]);
-        
+
         Click::factory()->count(2)->create(['link_id' => $link->id]);
 
         // Delete the group
@@ -209,7 +209,7 @@ class LinkDeletionCascadeTest extends TestCase
         // Link should still exist (groups don't cascade delete to links)
         $this->assertNotNull(Link::find($link->id));
         $this->assertEquals(2, Click::where('link_id', $link->id)->count());
-        
+
         // But the link's group_id should be null or handled appropriately
         $refreshedLink = Link::find($link->id);
         $this->assertNull($refreshedLink->group); // Relationship returns null

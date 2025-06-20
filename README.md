@@ -419,6 +419,27 @@ The queue worker will automatically process both click tracking and health check
 php artisan queue:work --queue=default,clicks,health-checks
 ```
 
+### Location Data Management
+
+**Update Missing Location Data:**
+If you have clicks that are missing geographic information (country/city), you can retroactively update them:
+
+```bash
+# Update clicks missing location data
+php artisan clicks:update-locations
+
+# Preview what would be updated without making changes
+php artisan clicks:update-locations --dry-run
+
+# Process in smaller batches (default is 100)
+php artisan clicks:update-locations --batch=50
+
+# Reprocess all clicks, including those with existing location data
+php artisan clicks:update-locations --all
+```
+
+**Note:** This command automatically skips private/local IP addresses (like 127.0.0.1) that cannot be geolocated. The command requires the MaxMind GeoLite2 database to be installed.
+
 ### Role Permission Management
 
 **Set up default permissions for all roles:**

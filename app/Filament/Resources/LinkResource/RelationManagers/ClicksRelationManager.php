@@ -320,7 +320,7 @@ class ClicksRelationManager extends RelationManager
                         $deletedCount = $link->clicks()->count();
                         $link->clicks()->delete();
                         $link->update(['click_count' => 0]);
-                        
+
                         Notification::make()
                             ->title("Deleted {$deletedCount} click records for this link")
                             ->success()
@@ -338,13 +338,13 @@ class ClicksRelationManager extends RelationManager
                     ->action(function ($record) {
                         // Delete the record
                         $record->delete();
-                        
+
                         // Update the link's click count by subtracting 1
                         $link = $this->getOwnerRecord();
                         $currentCount = $link->click_count;
                         $newCount = max(0, $currentCount - 1);
                         $link->update(['click_count' => $newCount]);
-                        
+
                         Notification::make()
                             ->title('Click record deleted and link count updated')
                             ->success()
@@ -360,16 +360,16 @@ class ClicksRelationManager extends RelationManager
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function ($records) {
                             $deletedCount = $records->count();
-                            
+
                             // Delete the records
                             $records->each(fn ($record) => $record->delete());
-                            
+
                             // Update the link's click count by subtracting deleted clicks
                             $link = $this->getOwnerRecord();
                             $currentCount = $link->click_count;
                             $newCount = max(0, $currentCount - $deletedCount);
                             $link->update(['click_count' => $newCount]);
-                            
+
                             Notification::make()
                                 ->title("Deleted {$deletedCount} click records and updated link count")
                                 ->success()

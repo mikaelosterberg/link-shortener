@@ -19,10 +19,10 @@ class ProcessRedisBatchJob implements ShouldQueue
     public function handle(ClickTrackingService $clickTracking): void
     {
         \Log::info('ProcessRedisBatchJob started');
-        
+
         // Process a batch of clicks from Redis
         $processed = $clickTracking->processBatch();
-        
+
         \Log::info('ProcessRedisBatchJob completed', ['processed' => $processed]);
 
         // If we processed clicks and there might be more, dispatch another job

@@ -8,7 +8,6 @@ use App\Models\LinkGroup;
 use App\Models\User;
 use App\Services\GeolocationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class GeoTargetingWithRedisTest extends TestCase
@@ -21,7 +20,7 @@ class GeoTargetingWithRedisTest extends TestCase
 
         // Create test user
         $this->user = User::factory()->create();
-        
+
         // Set Redis click tracking for these tests
         config(['shortener.analytics.click_tracking_method' => 'redis']);
     }
@@ -266,7 +265,7 @@ class GeoTargetingWithRedisTest extends TestCase
 
         // Should redirect to geo-targeted URL
         $response->assertRedirect('https://jp.example.com');
-        
+
         // Link click count should be incremented (async via Redis or sync fallback)
         // We don't test Redis internals, just that the redirect works
         $this->assertTrue(true); // Test passes if redirect works

@@ -75,12 +75,12 @@ class ClickTrackingService
             // Trigger batch processing when we reach the threshold
             if ($queueLength >= $triggerThreshold) {
                 ProcessRedisBatchJob::dispatch()->onQueue('clicks');
-                
+
                 // Log for debugging
                 Log::info('Redis batch job dispatched', [
                     'queue_length' => $queueLength,
                     'threshold' => $triggerThreshold,
-                    'link_id' => $link->id
+                    'link_id' => $link->id,
                 ]);
             }
 
@@ -128,11 +128,11 @@ class ClickTrackingService
         $processed = 0;
         $clicks = [];
         $linkCounts = [];
-        
+
         // Initialize geolocation service
         $geoService = null;
         if (class_exists(GeolocationService::class)) {
-            $geoService = new GeolocationService();
+            $geoService = new GeolocationService;
         }
 
         // Get batch of clicks from Redis

@@ -432,7 +432,7 @@ class LinkResource extends Resource
                                 $totalDeleted += $deleted;
                                 $record->update(['click_count' => 0]);
                             }
-                            
+
                             \Filament\Notifications\Notification::make()
                                 ->title("Deleted {$totalDeleted} click records")
                                 ->success()

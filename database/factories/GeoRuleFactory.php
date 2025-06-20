@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\GeoRule;
 use App\Models\Link;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,7 +19,7 @@ class GeoRuleFactory extends Factory
     {
         $matchTypes = ['country', 'continent', 'region'];
         $matchType = $this->faker->randomElement($matchTypes);
-        
+
         $matchValues = match ($matchType) {
             'country' => $this->faker->randomElements(['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP'], $this->faker->numberBetween(1, 3)),
             'continent' => $this->faker->randomElements(['NA', 'EU', 'AS', 'OC', 'SA', 'AF'], $this->faker->numberBetween(1, 2)),

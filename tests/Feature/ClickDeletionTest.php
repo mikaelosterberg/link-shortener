@@ -99,7 +99,7 @@ class ClickDeletionTest extends TestCase
         // Delete 3 clicks and update count
         $deletedCount = $clicksToDelete->count();
         $clicksToDelete->each(fn ($click) => $click->delete());
-        
+
         $currentCount = $link->click_count;
         $newCount = max(0, $currentCount - $deletedCount);
         $link->update(['click_count' => $newCount]);
@@ -122,7 +122,7 @@ class ClickDeletionTest extends TestCase
         // Try to delete all 5 clicks when count is only 2
         $deletedCount = $link->clicks()->count();
         $link->clicks()->delete();
-        
+
         $currentCount = $link->click_count;
         $newCount = max(0, $currentCount - $deletedCount);
         $link->update(['click_count' => $newCount]);
@@ -134,7 +134,7 @@ class ClickDeletionTest extends TestCase
     public function test_bulk_delete_all_clicks_for_multiple_links()
     {
         $group = LinkGroup::factory()->create();
-        
+
         $link1 = Link::factory()->create([
             'group_id' => $group->id,
             'click_count' => 5,
@@ -168,7 +168,7 @@ class ClickDeletionTest extends TestCase
     public function test_bulk_reset_click_counts_only()
     {
         $group = LinkGroup::factory()->create();
-        
+
         $link1 = Link::factory()->create([
             'group_id' => $group->id,
             'click_count' => 10,
@@ -219,7 +219,7 @@ class ClickDeletionTest extends TestCase
 
         $this->assertEquals(0, $link->fresh()->click_count);
         $this->assertEquals(0, $link->clicks()->count());
-        
+
         // Verify UTM data is also deleted
         $this->assertEquals(0, Click::whereNotNull('utm_source')->count());
     }

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GeoRule extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'link_id',
         'match_type',
