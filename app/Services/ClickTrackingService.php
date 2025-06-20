@@ -6,6 +6,7 @@ use App\Jobs\LogClickJob;
 use App\Jobs\ProcessRedisBatchJob;
 use App\Models\Click;
 use App\Models\Link;
+use App\Services\GeolocationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
@@ -127,6 +128,12 @@ class ClickTrackingService
         $processed = 0;
         $clicks = [];
         $linkCounts = [];
+        
+        // Initialize geolocation service
+        $geoService = null;
+        if (class_exists(GeolocationService::class)) {
+            $geoService = new GeolocationService();
+        }
 
         // Get batch of clicks from Redis
         for ($i = 0; $i < $batchSize; $i++) {
@@ -138,6 +145,13 @@ class ClickTrackingService
             $clickData = json_decode($data, true);
             if (! $clickData) {
                 continue;
+            }
+
+            // Add geolocation data if available
+            if ($geoService && ! empty($clickData['ip_address'])) {
+                $location = $geoService->getLocation($clickData['ip_address']);
+                $clickData['country'] = $location['country'] ?? null;
+                $clickData['city'] = $location['city'] ?? null;
             }
 
             // Prepare for bulk insert
