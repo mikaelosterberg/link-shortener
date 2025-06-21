@@ -74,7 +74,7 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Email Marketing Ready** - Works seamlessly with MailChimp, Constant Contact, and other platforms
 
 ### 📱 QR Code Features
-- **Instant Generation** - QR codes available in both table view and edit screens
+- **Instant Generation** - QR codes available in the edit screen
 - **Multiple Formats** - Download as PNG (200px, 400px) or SVG (vector)
 - **Cross-Platform UX** - Clear download buttons work on all devices
 - **Professional Quality** - High-resolution codes perfect for print materials
@@ -115,6 +115,15 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Real-Time Enforcement** - Security checks use live database data, not cached values
 - **Admin Management** - Easy bulk operations, filtering, and click count resets
 - **Performance Optimized** - Security checks only run for protected links
+
+### 🔗 Third-Party Integrations
+- **Google Analytics 4 Integration** - Server-side event tracking with GA4 Measurement Protocol
+- **Page View Events** - Sends page_view events for standard GA reports compatibility
+- **Comprehensive Data Sharing** - Includes geographic, UTM, A/B test, and device data
+- **Queue-Based Processing** - Non-blocking analytics with retry logic and exponential backoff
+- **Admin Configuration Panel** - Easy setup with connection testing and validation
+- **Production-Ready** - SSL verification, IPv4 resolution, and error handling
+- **Privacy-Conscious** - Only sends data when explicitly enabled and configured
 
 <!-- TODO: Add screenshots when available
 ## Screenshots
@@ -225,13 +234,13 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    QUEUE_CONNECTION=database
    
    # Run the queue worker:
-   php artisan queue:work --queue=default,clicks,health-checks
+   php artisan queue:work --queue=default,clicks,health-checks,analytics,analytics
    ```
    
    **Option C: Cron Job for Shared Hosting**
    ```bash
    # Add to your crontab:
-   * * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-time=59 >> /dev/null 2>&1
+   * * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks,analytics,analytics --stop-when-empty --max-time=59 >> /dev/null 2>&1
    ```
    
    **Option D: Redis Queue for High Performance**
@@ -241,9 +250,6 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    CACHE_STORE=redis
    REDIS_CLIENT=predis
    CLICK_TRACKING_METHOD=redis
-   
-   # Install Redis driver:
-   composer require predis/predis
    ```
    
    See the [Queue Processing](#queue-processing) section for detailed setup instructions.
@@ -364,8 +370,8 @@ UTM parameters added to your short links are automatically passed through to the
 
 **Example Flow:**
 ```
-Original Link: https://short.ly/product
-With UTM: https://short.ly/product?utm_source=newsletter&utm_medium=email&utm_campaign=spring2024
+Original Link: https://myshortener.example/product
+With UTM: https://myshortener.example/product?utm_source=newsletter&utm_medium=email&utm_campaign=spring2024
 Destination: https://example.com/product?utm_source=newsletter&utm_medium=email&utm_campaign=spring2024
 ```
 
@@ -398,9 +404,9 @@ Destination: https://example.com/product?utm_source=newsletter&utm_medium=email&
 You don't need a separate "default UTM parameters" feature - just include them in your destination URLs! The system intelligently merges parameters:
 
 ```
-Destination URL: https://shop.com/sale?utm_source=website&utm_campaign=spring2024
-Newsletter Link: https://short.ly/sale?utm_source=newsletter&utm_medium=email
-Final Result: https://shop.com/sale?utm_source=newsletter&utm_campaign=spring2024&utm_medium=email
+Destination URL: https://mystore.example/sale?utm_source=website&utm_campaign=spring2024
+Newsletter Link: https://myshortener.example/sale?utm_source=newsletter&utm_medium=email
+Final Result: https://mystore.example/sale?utm_source=newsletter&utm_campaign=spring2024&utm_medium=email
 ```
 
 This approach is more flexible and follows standard marketing practices. Campaign-specific UTM parameters override defaults while preserving other values.
@@ -432,7 +438,7 @@ Add to your crontab:
 **Processing Jobs:**
 The queue worker will automatically process both click tracking and health check jobs:
 ```bash
-php artisan queue:work --queue=default,clicks,health-checks
+php artisan queue:work --queue=default,clicks,health-checks,analytics
 ```
 
 ### Location Data Management
@@ -542,6 +548,84 @@ curl -X GET 'https://example.com/api/links?api_key=sk_your_api_key'
 - `GET /api/groups?simple=true` - Returns simplified list for dropdowns
 - `POST/PUT` with `"is_default": true` - Sets group as default for new links
 
+## Third-Party Integrations
+
+### Google Analytics 4 Integration
+
+The application includes built-in Google Analytics 4 integration using the Measurement Protocol API. This provides server-side event tracking that works reliably across all browsers and devices.
+
+**Key Features:**
+- **Page View Events** - Sends `page_view` events compatible with standard GA4 reports
+- **Comprehensive Data** - Includes geographic, UTM, A/B test, and device information
+- **Non-blocking** - Uses Laravel queues for async processing with retry logic
+- **Production Ready** - SSL verification, error handling, and IPv4 resolution
+- **Privacy Conscious** - Only sends data when explicitly enabled and configured
+
+**Setup Instructions:**
+
+1. **Get GA4 Credentials:**
+   - Create a GA4 property in Google Analytics
+   - Find your Measurement ID (starts with `G-`)
+   - Generate an API Secret in GA4 Admin → Data Streams → [Your Stream] → Measurement Protocol API Secrets
+
+2. **Configure Integration:**
+   - Login to admin panel at `/admin`
+   - Navigate to "Settings" → "Integrations"
+   - Enable Google Analytics integration
+   - Enter your GA4 Measurement ID (e.g., `G-XXXXXXXXXX`)
+   - Enter your Measurement Protocol API Secret
+   - Click "Test Connection" to verify setup
+   - Save settings
+
+3. **Register Custom Parameters (Important):**
+   Custom parameters must be registered in GA4 to be recorded properly:
+   - Go to GA4 Admin → Custom Definitions → Custom Dimensions
+   - Create custom dimensions for the parameters you want to track:
+     - `custom_link_id` - Link ID (Event-scoped)
+     - `custom_link_slug` - Link Slug (Event-scoped)
+     - `custom_destination_url` - Destination URL (Event-scoped)
+     - `ab_test_id` - A/B Test ID (Event-scoped)
+     - `ab_variant_id` - A/B Test Variant (Event-scoped)
+     - `device_type` - Device Type (Event-scoped)
+   - Standard parameters (country, utm_source, etc.) are automatically available
+
+4. **Queue Setup:**
+   Make sure your queue worker includes the `analytics` queue:
+   ```bash
+   php artisan queue:work --queue=default,clicks,health-checks,analytics
+   ```
+
+5. **Verification:**
+   - Use "Test Connection" button to verify setup (events appear in GA4 DebugView)
+   - Make test clicks on your short links (events appear in standard GA4 reports within 24-48 hours)
+   - Events appear as page views with your short link slugs as page titles
+
+**Data Sent to Google Analytics:**
+
+*Standard Parameters (automatically available):*
+- **Page Location** - The short link URL (your domain + slug)
+- **Page Title** - The short link slug with " - Link Redirect" suffix
+- **Page Referrer** - Where the click originated from
+- **Timestamp** - Exact click time (important for queued processing)
+- **Session ID** - User session identifier for proper event grouping
+- **Geographic Data** - Country, region, city (when available)
+- **UTM Parameters** - Campaign tracking parameters mapped to GA4 standard names (source, medium, campaign, term, content)
+
+*Custom Parameters (require registration in GA4):*
+- **Link Data** - `custom_link_id`, `custom_link_slug`, `custom_destination_url`
+- **A/B Test Data** - `ab_test_id`, `ab_variant_id` for optimization campaigns
+- **Device Information** - `device_type`, `browser`, `operating_system`
+
+**Note:** Custom parameters must be registered as Custom Dimensions in GA4 Admin → Custom Definitions before they will appear in reports.
+
+**Privacy & Performance Notes:**
+- Events are processed asynchronously via Laravel queues
+- Failed events are retried with exponential backoff
+- GA failures never block or slow down redirects
+- No client-side JavaScript or cookies required
+- Only sends data for actual clicks, not bot traffic
+- **Note:** Real click events appear in standard GA4 reports (not DebugView). Only connection tests use debug mode.
+
 ## Development
 
 This project serves as a learning exercise for:
@@ -603,7 +687,7 @@ QUEUE_CONNECTION=database
 **Running the Worker:**
 ```bash
 # Process all queue jobs (clicks, health checks, etc.)
-php artisan queue:work --queue=default,clicks,health-checks --sleep=3 --tries=3
+php artisan queue:work --queue=default,clicks,health-checks,analytics --sleep=3 --tries=3
 ```
 
 #### 3. Production Deployment Options
@@ -640,10 +724,10 @@ WantedBy=multi-user.target
 **Cron Job (Shared Hosting):**
 ```cron
 # Runs every minute (processes all queues)
-* * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-time=59 >> /dev/null 2>&1
+* * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks,analytics --stop-when-empty --max-time=59 >> /dev/null 2>&1
 
 # Alternative for limited hosting (every 5 minutes, max 10 jobs)
-*/5 * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
+*/5 * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks,analytics --stop-when-empty --max-jobs=10 >> /dev/null 2>&1
 
 # ISPConfig format (adjust path as needed)
 * * * * * php /var/www/clients/client1/web1/web/artisan queue:work --queue=default,clicks,health-checks --tries=3 --stop-when-empty
@@ -760,7 +844,7 @@ php artisan test --coverage
 ```
 
 **Test Coverage:**
-- 130+ tests with 600+ assertions
+- 140+ tests with 700+ assertions
 - Core redirect functionality
 - Complete API endpoint testing (links and groups)
 - Link generation and validation
@@ -780,18 +864,18 @@ php artisan test --coverage
 - Geo-targeting rule evaluation and priority handling
 - Redis-based click tracking and batch processing
 - Performance optimization features
+- **Google Analytics 4 integration** - Complete service, job, and integration testing
+- **Third-party integrations** - Settings management and admin panel functionality
 
 ## Future Enhancements
 
 ### High Value & Quick Wins
 - **CSV Import System** - Bulk link creation and migration from other services (comprehensive design complete, ready for implementation)
-- **Google Analytics Integration** - Server-side event tracking
 
 ### Advanced Features
 - **Link Scheduling** - Auto-activate/deactivate at specific times
 - **Bulk Operations** - Mass edit/delete links
 - **Webhooks** - Real-time click event notifications
-- **Team Management** - Workspaces and collaboration features
 
 ## Contributing
 

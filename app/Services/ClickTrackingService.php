@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\LogClickJob;
 use App\Jobs\ProcessRedisBatchJob;
+use App\Jobs\SendGoogleAnalyticsEventJob;
 use App\Models\Click;
 use App\Models\Link;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,9 @@ class ClickTrackingService
     public function trackClick(Link $link, array $clickData): void
     {
         $method = config('shortener.analytics.click_tracking_method', 'queue');
+
+        // Always send to Google Analytics if enabled (regardless of local tracking method)
+        $this->sendToGoogleAnalytics($link, $clickData);
 
         switch ($method) {
             case 'redis':
@@ -218,6 +222,31 @@ class ClickTrackingService
 
         // Fall back to database
         return $link->click_count;
+    }
+
+    /**
+     * Send click data to Google Analytics if enabled
+     */
+    private function sendToGoogleAnalytics(Link $link, array $clickData): void
+    {
+        // Prepare GA-specific click data
+        $gaClickData = array_merge($clickData, [
+            'link_slug' => $link->short_code,
+            'destination_url' => $link->original_url,
+            'click_id' => uniqid('click_', true),
+            'session_id' => session()->getId(),
+            // Add any additional fields that GA service expects
+        ]);
+
+        // Dispatch GA job asynchronously (non-blocking)
+        try {
+            SendGoogleAnalyticsEventJob::dispatch($gaClickData);
+        } catch (\Exception $e) {
+            Log::warning('Failed to dispatch GA event job', [
+                'error' => $e->getMessage(),
+                'link_id' => $link->id,
+            ]);
+        }
     }
 
     /**

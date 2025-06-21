@@ -118,6 +118,7 @@ class Link extends Model
             'healthy' => $this->last_checked_at->lt(now()->subDays(7)), // Weekly for healthy
             'warning' => $this->last_checked_at->lt(now()->subDays(3)), // Every 3 days for warnings
             'error' => $this->last_checked_at->lt(now()->subDay()),     // Daily for errors
+            'blocked' => $this->last_checked_at->lt(now()->subDays(7)), // Weekly for blocked (may be datacenter IP issue)
             default => true,
         };
     }
@@ -131,6 +132,7 @@ class Link extends Model
             'healthy' => 'success',
             'warning' => 'warning',
             'error' => 'danger',
+            'blocked' => 'info',
             default => 'gray',
         };
     }
@@ -144,6 +146,7 @@ class Link extends Model
             'healthy' => 'heroicon-o-check-circle',
             'warning' => 'heroicon-o-exclamation-triangle',
             'error' => 'heroicon-o-x-circle',
+            'blocked' => 'heroicon-o-shield-exclamation',
             default => 'heroicon-o-question-mark-circle',
         };
     }
@@ -172,6 +175,11 @@ class Link extends Model
                     ->orWhere(function ($q2) {
                         $q2->where('health_status', 'error')
                             ->where('last_checked_at', '<', now()->subDay());
+                    })
+                  // Or blocked links older than 7 days
+                    ->orWhere(function ($q2) {
+                        $q2->where('health_status', 'blocked')
+                            ->where('last_checked_at', '<', now()->subDays(7));
                     });
             });
     }

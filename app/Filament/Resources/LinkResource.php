@@ -236,6 +236,7 @@ class LinkResource extends Resource
                         'healthy' => 'Healthy',
                         'warning' => 'Warning',
                         'error' => 'Error',
+                        'blocked' => 'Blocked',
                     ])
                     ->label('Health Status'),
                 Tables\Filters\TernaryFilter::make('is_active')

@@ -12,6 +12,11 @@ class LinkHealthWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected function getColumns(): int
+    {
+        return 4;
+    }
+
     protected function getStats(): array
     {
         // Get health status counts for ACTIVE links only
@@ -24,6 +29,7 @@ class LinkHealthWidget extends BaseWidget
         $healthy = $healthCounts['healthy'] ?? 0;
         $warning = $healthCounts['warning'] ?? 0;
         $error = $healthCounts['error'] ?? 0;
+        $blocked = $healthCounts['blocked'] ?? 0;
         $unchecked = $healthCounts['unchecked'] ?? 0;
         $total = array_sum($healthCounts);
 
@@ -40,7 +46,7 @@ class LinkHealthWidget extends BaseWidget
             : 'No checks performed yet';
 
         // Calculate health percentage
-        $checkedTotal = $healthy + $warning + $error;
+        $checkedTotal = $healthy + $warning + $error + $blocked;
         $healthPercentage = $checkedTotal > 0
             ? round(($healthy / $checkedTotal) * 100, 1)
             : 0;
@@ -58,9 +64,9 @@ class LinkHealthWidget extends BaseWidget
                 ->color('warning')
                 ->chart($this->getHealthTrend('warning')),
 
-            Stat::make('Error Links', $error)
-                ->description('Broken or inaccessible')
-                ->descriptionIcon('heroicon-m-x-circle')
+            Stat::make('Problem Links', $error + $blocked)
+                ->description("Errors: {$error}, Blocked: {$blocked}")
+                ->descriptionIcon('heroicon-m-exclamation-circle')
                 ->color('danger')
                 ->chart($this->getHealthTrend('error')),
 

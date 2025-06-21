@@ -116,7 +116,22 @@ class CheckLinkHealthJob implements ShouldQueue
             return 'warning';
         }
 
-        // 4xx and 5xx are errors
+        // 403 Forbidden - often datacenter IP blocks
+        if ($statusCode === 403) {
+            return 'blocked';
+        }
+
+        // 404 Not Found and 410 Gone are definite errors
+        if ($statusCode === 404 || $statusCode === 410) {
+            return 'error';
+        }
+
+        // Other 4xx and 5xx are errors
+        if ($statusCode >= 400) {
+            return 'error';
+        }
+
+        // Default to error for unexpected cases
         return 'error';
     }
 
@@ -129,8 +144,9 @@ class CheckLinkHealthJob implements ShouldQueue
             200 => 'OK',
             301 => 'Permanent redirect',
             302 => 'Temporary redirect',
-            403 => 'Access forbidden',
+            403 => 'Access blocked',
             404 => 'Page not found',
+            410 => 'Page permanently removed',
             500 => 'Server error',
             502 => 'Bad gateway',
             503 => 'Service unavailable',

@@ -16,6 +16,7 @@ A modern URL shortening service built with Laravel and Filament, featuring advan
 - **Drag-and-Drop Report Builder** with container-based layouts
 - **A/B Testing System** for conversion optimization
 - **Geographic Targeting** with location-based redirects
+- **Google Analytics 4 Integration** with server-side event tracking
 - **RESTful API** with permission-based authentication
 - **High-Performance Caching** with Redis support for email campaigns
 - **Database Agnostic** - works with SQLite and MySQL
@@ -37,7 +38,8 @@ All core features are implemented and production-ready:
 - ✅ Advanced report builder with cross-container drag-and-drop
 - ✅ Password protection and click limits
 - ✅ Redis-based performance optimization for high traffic
-- ✅ Comprehensive test suite (130+ tests)
+- ✅ **Google Analytics 4 integration** with server-side tracking
+- ✅ Comprehensive test suite (140+ tests)
 - ✅ Database-agnostic design (SQLite + MySQL)
 
 ## Quick Commands
@@ -57,6 +59,9 @@ php artisan links:check-health
 
 # Process Redis click batches (high traffic)
 php artisan clicks:process-batch
+
+# Google Analytics integration
+# Configure in Admin → Settings → Integrations
 ```
 
 ## Environment Configuration
@@ -79,7 +84,8 @@ MAXMIND_LICENSE_KEY=your_license_key
 - **Redis Click Tracking** - Zero database writes during redirects for email campaigns
 - **Database-Agnostic SQL** - Compatible date formatting for SQLite and MySQL
 - **Smart Caching** - File-based (dev) or Redis (production) caching
-- **Queue Processing** - Background job processing for analytics
+- **Queue Processing** - Background job processing for analytics and Google Analytics
+- **Server-Side GA Tracking** - Adblocker-proof Google Analytics with accurate timestamps
 - **Health Monitoring** - Automatic link health checks with smart scheduling
 
 ## Documentation Structure
@@ -93,3 +99,9 @@ All detailed documentation is organized in the `docs/` folder:
 - [Deployment](docs/deployment.md) - Production setup and maintenance
 
 This structure keeps the main CLAUDE.md concise while providing comprehensive documentation for all features and use cases.
+
+# Development Environment
+This project is running on WSL/Windows with the following configuration:
+- PHP Location: `C:\laragon\bin\php\php-8.3\php.exe`
+- Laravel Pint: `"C:\laragon\bin\php\php-8.3\php.exe" ./vendor/bin/pint`
+- Tests: `"C:\laragon\bin\php\php-8.3\php.exe" artisan test`
