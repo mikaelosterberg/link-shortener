@@ -247,7 +247,7 @@ class ApiTest extends TestCase
 
         // Verify the shorturl field contains the full URL
         $responseData = $response->json();
-        $this->assertStringContains('simple-test', $responseData['shorturl']);
+        $this->assertStringContainsString('simple-test', $responseData['shorturl']);
 
         // Verify database
         $this->assertDatabaseHas('links', [

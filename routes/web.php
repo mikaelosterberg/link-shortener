@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RedirectController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -27,8 +28,19 @@ Route::get('/qr/{link}/download', [QrCodeController::class, 'generate'])
     ->middleware('auth');
 
 Route::get('/qr/{link}/display', [QrCodeController::class, 'display'])
-        ->name('qr.display')
-        ->middleware('auth');
+    ->name('qr.display')
+    ->middleware('auth');
+
+// Report routes
+Route::get('/reports/{report}/view', [ReportController::class, 'view'])->name('reports.view');
+Route::get('/reports/{report}/data', [ReportController::class, 'data'])->name('reports.data');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/reports/{report}/builder', [ReportController::class, 'builder'])->name('reports.builder');
+    Route::get('/reports/{report}/preview-data', [ReportController::class, 'previewData'])->name('reports.preview-data');
+    Route::post('/reports/{report}/components', [ReportController::class, 'updateComponents'])->name('reports.update-components');
+    Route::post('/reports/{report}/reorder-components', [ReportController::class, 'reorderComponents'])->name('reports.reorder-components');
+});
 
 // Redirect routes with rate limiting (must be last)
 Route::get('/{shortCode}', [RedirectController::class, 'redirect'])

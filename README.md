@@ -24,6 +24,22 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Browser Detection** - Track user agents and devices
 - **Referrer Tracking** - See where clicks are coming from
 
+### 📋 Advanced Reporting System
+- **Drag-and-Drop Report Builder** - Visual report creation with intuitive interface
+- **Container-Based Layouts** - Flexible grid system using CSS Flexbox
+- **Cross-Container Component Movement** - Easily reorganize components between containers
+- **Multiple Component Types**:
+  - Metric cards with comparison data
+  - Line, bar, and pie charts with real-time data
+  - Data tables with sorting and filtering
+  - Text blocks for annotations and insights
+- **Custom Layout Options** - Row/column layouts, spacing, alignment controls
+- **Real-Time Preview** - Live preview with actual data from your database
+- **Permission-Based Access** - Role-based report viewing and editing
+- **Public/Team/Private Visibility** - Flexible sharing options
+- **Link Filtering** - Focus reports on specific links or groups
+- **Date Range Controls** - Dynamic time-based analytics
+
 ### 🛡️ Admin & Security
 - **Filament Admin Panel** - Modern, responsive admin interface
 - **Role-based Permissions** - Complete permission system with 4 roles:

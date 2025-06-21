@@ -6,7 +6,6 @@ use App\Jobs\LogClickJob;
 use App\Jobs\ProcessRedisBatchJob;
 use App\Models\Click;
 use App\Models\Link;
-use App\Services\GeolocationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
@@ -109,6 +108,10 @@ class ClickTrackingService
     {
         if (config('shortener.analytics.async_tracking', true)) {
             LogClickJob::dispatch($clickData)->onQueue('clicks');
+        } else {
+            // Process synchronously when async tracking is disabled
+            $job = new LogClickJob($clickData);
+            $job->handle();
         }
     }
 
