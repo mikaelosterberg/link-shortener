@@ -26,24 +26,29 @@
             <!-- CSV Format Information -->
             <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">CSV Format Requirements:</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div>
-                        <strong>Required Columns:</strong>
+                        <strong>Required Column:</strong>
                         <ul class="mt-1 space-y-1 ml-4">
-                            <li>• <code>original_url</code> - The destination URL</li>
-                            <li>• <code>custom_slug</code> - Custom short code (optional)</li>
-                            <li>• <code>group_name</code> - Link group (optional)</li>
-                            <li>• <code>expires_at</code> - Expiration date (optional)</li>
-                            <li>• <code>password</code> - Password protection (optional)</li>
+                            <li>• <code>original_url</code> - The destination URL (must include http:// or https://)</li>
                         </ul>
                     </div>
                     <div>
-                        <strong>Optional Columns:</strong>
+                        <strong>Basic Optional Columns:</strong>
+                        <ul class="mt-1 space-y-1 ml-4">
+                            <li>• <code>custom_slug</code> - Custom short code</li>
+                            <li>• <code>group_name</code> - Link group (creates if doesn't exist)</li>
+                            <li>• <code>expires_at</code> - Expiration date (YYYY-MM-DD format)</li>
+                            <li>• <code>password</code> - Password protection</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Advanced Optional Columns:</strong>
                         <ul class="mt-1 space-y-1 ml-4">
                             <li>• <code>click_limit</code> - Maximum clicks (number)</li>
-                            <li>• <code>redirect_type</code> - Must be exactly 301, 302, 307, or 308</li>
-                            <li>• <code>is_active</code> - 1 for active, 0 for inactive (defaults to 1/active if empty)</li>
-                            <li>• <code>notes</code> - Additional notes</li>
+                            <li>• <code>redirect_type</code> - 301, 302, 307, or 308 (defaults to 302)</li>
+                            <li>• <code>is_active</code> - 1 for active, 0 for inactive (defaults to 1)</li>
+                            <li>• <code>notes</code> - Additional notes or description</li>
                         </ul>
                     </div>
                 </div>
