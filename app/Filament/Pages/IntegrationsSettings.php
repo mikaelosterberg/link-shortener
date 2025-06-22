@@ -115,26 +115,27 @@ class IntegrationsSettings extends Page
     public function testGoogleAnalytics(): void
     {
         $data = $this->form->getState();
-        
+
         // Temporarily save test settings to use current form values
-        if (!$data['google_analytics_enabled'] || empty($data['google_analytics_measurement_id']) || empty($data['google_analytics_api_secret'])) {
+        if (! $data['google_analytics_enabled'] || empty($data['google_analytics_measurement_id']) || empty($data['google_analytics_api_secret'])) {
             Notification::make()
                 ->title('Missing configuration')
                 ->body('Please enable Google Analytics and provide both Measurement ID and API Secret before testing.')
                 ->warning()
                 ->send();
+
             return;
         }
-        
+
         // Temporarily set form values for testing (without persisting)
         $originalEnabled = IntegrationSetting::get('google_analytics', 'enabled');
         $originalMeasurementId = IntegrationSetting::get('google_analytics', 'measurement_id');
         $originalApiSecret = IntegrationSetting::get('google_analytics', 'api_secret');
-        
+
         IntegrationSetting::set('google_analytics', 'enabled', $data['google_analytics_enabled']);
         IntegrationSetting::set('google_analytics', 'measurement_id', $data['google_analytics_measurement_id']);
         IntegrationSetting::set('google_analytics', 'api_secret', $data['google_analytics_api_secret']);
-        
+
         try {
             $gaService = new GoogleAnalyticsService;
             $result = $gaService->testConnection();

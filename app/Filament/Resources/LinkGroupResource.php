@@ -94,10 +94,42 @@ class LinkGroupResource extends Resource
                     ->modalDescription('This will make this group the default for new links. Any existing default will be unset.')
                     ->modalSubmitActionLabel('Yes, set as default'),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete Link Group')
+                    ->modalDescription(fn ($record) => $record->links()->count() > 0
+                            ? "This group contains {$record->links()->count()} link(s). The links will be moved to the default group or left ungrouped if no default exists."
+                            : 'Are you sure you want to delete this link group?'
+                    )
+                    ->modalSubmitActionLabel('Yes, delete group')
+                    ->before(function ($record) {
+                        // Move links to default group or ungroup them before deletion
+                        if ($record->links()->count() > 0) {
+                            $defaultGroup = \App\Models\LinkGroup::getDefault();
+                            $newGroupId = $defaultGroup && $defaultGroup->id !== $record->id ? $defaultGroup->id : null;
+
+                            $record->links()->update(['group_id' => $newGroupId]);
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete Link Groups')
+                        ->modalDescription('All links in these groups will be moved to the default group or left ungrouped if no default exists.')
+                        ->modalSubmitActionLabel('Yes, delete groups')
+                        ->before(function ($records) {
+                            // Move all links from deleted groups to default or ungroup them
+                            $defaultGroup = \App\Models\LinkGroup::getDefault();
+
+                            foreach ($records as $record) {
+                                if ($record->links()->count() > 0) {
+                                    $newGroupId = $defaultGroup && $defaultGroup->id !== $record->id ? $defaultGroup->id : null;
+                                    $record->links()->update(['group_id' => $newGroupId]);
+                                }
+                            }
+                        }),
                 ]),
             ]);
     }

@@ -116,6 +116,21 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Admin Management** - Easy bulk operations, filtering, and click count resets
 - **Performance Optimized** - Security checks only run for protected links
 
+### 📂 CSV Import System
+- **Bulk Link Creation** - Import hundreds of links from CSV files with comprehensive validation
+- **Template Download** - Get properly formatted CSV template with examples and column descriptions
+- **Smart Processing** - Small imports (≤100 rows) process immediately, large imports use background queue
+- **Automatic Group Creation** - Link groups are created automatically if they don't exist
+- **Default Group Assignment** - Links without groups automatically go to your default group
+- **Unique Slug Generation** - Automatic short code generation when custom slugs aren't provided
+- **Smart Auto-Correction** - Invalid redirect types auto-default to 302, links default to active
+- **Graceful Error Handling** - Skip invalid rows but continue processing valid ones
+- **Comprehensive Validation** - URL validation, slug uniqueness checks, and data type validation
+- **Detailed Feedback** - Clear warnings for skipped rows and auto-corrections
+- **Permission-Based Access** - Only users with link creation permissions can import
+- **Progress Tracking** - Real-time feedback for small imports, notifications for background processing
+- **Data Cleanup** - Automatic file cleanup and secure temporary storage
+
 ### 🔗 Third-Party Integrations
 - **Google Analytics 4 Integration** - Server-side event tracking with GA4 Measurement Protocol
 - **Page View Events** - Sends page_view events for standard GA reports compatibility
@@ -313,6 +328,23 @@ Once you have a super admin account set up, you can manage other users:
 3. Enter the destination URL
 4. Optionally set a custom slug, category, and expiration
 5. Save to generate your short link
+
+**Via CSV Import (Bulk Creation):**
+1. Login to `/admin`
+2. Navigate to "System" → "CSV Import"
+3. Download the CSV template to see the required format
+4. Fill in your data following the template structure
+5. Upload your CSV file and click "Import CSV"
+6. Small files (≤100 rows) process immediately, larger files process in background
+
+**CSV Format Requirements:**
+- **Required:** `original_url` (must be valid URL with http/https)
+- **Optional:** `custom_slug` (letters, numbers, hyphens, underscores only)
+- **Optional:** `group_name` (will create group if it doesn't exist, defaults to your default group)
+- **Optional:** `expires_at` (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format)
+- **Optional:** `password`, `click_limit`, `notes`
+- **Optional:** `redirect_type` (301/302/307/308, defaults to 302 for invalid values)
+- **Optional:** `is_active` (1 for active, 0 for inactive, defaults to 1/active if empty)
 
 **Via API:**
 ```bash
@@ -844,7 +876,7 @@ php artisan test --coverage
 ```
 
 **Test Coverage:**
-- 140+ tests with 700+ assertions
+- 170+ tests with 900+ assertions
 - Core redirect functionality
 - Complete API endpoint testing (links and groups)
 - Link generation and validation
@@ -866,11 +898,9 @@ php artisan test --coverage
 - Performance optimization features
 - **Google Analytics 4 integration** - Complete service, job, and integration testing
 - **Third-party integrations** - Settings management and admin panel functionality
+- **CSV Import System** - Bulk link creation with validation, queue processing, and error handling
 
 ## Future Enhancements
-
-### High Value & Quick Wins
-- **CSV Import System** - Bulk link creation and migration from other services (comprehensive design complete, ready for implementation)
 
 ### Advanced Features
 - **Link Scheduling** - Auto-activate/deactivate at specific times

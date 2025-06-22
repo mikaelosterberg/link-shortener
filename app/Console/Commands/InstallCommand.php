@@ -37,22 +37,25 @@ class InstallCommand extends Command
         // Step 4: Create admin user
         $adminUser = $this->createAdminUser();
 
-        // Step 5: Set up Shield permissions
+        // Step 5: Set up storage and directories
+        $this->setupStorage();
+
+        // Step 6: Set up Shield permissions
         $this->setupShield();
 
-        // Step 6: Set up roles and permissions
+        // Step 7: Set up roles and permissions
         $this->setupRoles($adminUser);
 
-        // Step 7: Fix navigation grouping
+        // Step 8: Fix navigation grouping
         $this->fixNavigationGrouping();
 
-        // Step 8: Verify Shield routes
+        // Step 9: Verify Shield routes
         $this->verifyShieldRoutes();
 
-        // Step 9: Final navigation fix (after Shield install)
+        // Step 10: Final navigation fix (after Shield install)
         $this->finalNavigationFix();
 
-        // Step 10: Clear caches
+        // Step 11: Clear caches
         $this->clearCaches();
 
         // Step 11: Success message
@@ -158,6 +161,58 @@ class InstallCommand extends Command
         $this->newLine();
 
         return $user;
+    }
+
+    private function setupStorage(): void
+    {
+        $this->info('💾 Setting up storage and directories...');
+
+        // Create storage link
+        if (! file_exists(public_path('storage'))) {
+            $this->callSilent('storage:link');
+            $this->line('  ✅ Created storage symbolic link');
+        } else {
+            $this->line('  ✅ Storage link already exists');
+        }
+
+        // Create required directories
+        $directories = [
+            storage_path('app/csv-imports'),
+            storage_path('app/geoip'),
+            storage_path('app/csv-import-results'),
+        ];
+
+        foreach ($directories as $directory) {
+            if (! is_dir($directory)) {
+                mkdir($directory, 0775, true);
+                $this->line('  ✅ Created directory: '.basename($directory));
+            } else {
+                $this->line('  ✅ Directory exists: '.basename($directory));
+            }
+        }
+
+        // Set proper permissions
+        $this->line('  🔄 Setting storage permissions...');
+        $storagePath = storage_path();
+
+        try {
+            // Make storage writable
+            chmod($storagePath, 0775);
+
+            // Make specific directories writable
+            foreach ($directories as $directory) {
+                if (is_dir($directory)) {
+                    chmod($directory, 0775);
+                }
+            }
+
+            $this->line('  ✅ Storage permissions configured');
+        } catch (\Exception $e) {
+            $this->warn('  ⚠️  Could not set permissions automatically: '.$e->getMessage());
+            $this->line('  📋 You may need to run: chmod -R 775 storage/');
+        }
+
+        $this->newLine();
     }
 
     private function setupShield(): void
@@ -390,6 +445,8 @@ class InstallCommand extends Command
         $this->line('  • Admin user created with super_admin permissions');
         $this->line('  • All roles configured (super_admin, admin, user, panel_user)');
         $this->line('  • Default permissions assigned to each role');
+        $this->line('  • Storage directories created with proper permissions');
+        $this->line('  • Storage symbolic link created');
         $this->line('  • Filament admin panel ready to use');
         $this->newLine();
 

@@ -132,15 +132,16 @@ class SetupRolePermissions extends Command
                 'update_api::key',
                 'delete_api::key',
 
+                // Pages
+                'page_CsvImport',
+                'page_UserProfile',
+
                 // Dashboard Widgets
                 'widget_OverviewStatsWidget',
                 'widget_LinkHealthWidget',
                 'widget_GeographicStatsWidget',
                 'widget_ClickTrendsChart',
                 'widget_TopLinksWidget',
-
-                // Profile Management
-                'page_UserProfile',
             ],
 
             'user' => [
@@ -198,8 +199,8 @@ class SetupRolePermissions extends Command
 
             $description = match ($roleName) {
                 'super_admin' => 'Unrestricted access to everything (automatic)',
-                'admin' => 'Full link management + dashboard access',
-                'user' => 'Basic link management + limited dashboard',
+                'admin' => 'Full link management + CSV import + dashboard access',
+                'user' => 'Basic link management + limited dashboard (no CSV import)',
                 'panel_user' => 'View-only access to own data',
                 default => 'Unknown role'
             };
