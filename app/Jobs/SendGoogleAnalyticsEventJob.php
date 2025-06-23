@@ -52,17 +52,17 @@ class SendGoogleAnalyticsEventJob implements ShouldQueue
                 'attempt' => $this->attempts(),
             ]);
 
-            // If this is the final attempt, don't fail the job
-            // GA tracking is not critical to the application
-            if ($this->attempts() >= $this->tries) {
-                Log::error('GA4 event failed after max attempts', [
-                    'click_data' => $this->clickData,
-                ]);
-            } else {
-                // Retry with exponential backoff
-                $this->release(30 * $this->attempts());
-            }
+            // For GA failures, we don't want to retry since it's not critical
+            // Just log and continue - GA tracking is supplementary to core functionality
         }
+    }
+
+    /**
+     * Calculate the number of seconds to wait before retrying the job.
+     */
+    public function backoff(): array
+    {
+        return [10, 30, 60];
     }
 
     /**

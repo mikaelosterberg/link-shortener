@@ -83,6 +83,7 @@ class GoogleAnalyticsServiceTest extends TestCase
             'destination_url' => 'https://example.com/page',
             'referrer' => 'https://referrer.com',
             'clicked_at' => $clickTime,
+            'ip_address' => '203.0.113.1',
             'country' => 'US',
             'region' => 'California',
             'city' => 'San Francisco',

@@ -165,12 +165,6 @@ class RedirectController extends Controller
         // Track click using configured method
         $clickTracking->trackClick($link, $clickData);
 
-        // Handle synchronous click count increment for links with limits
-        if ($link->click_limit !== null) {
-            // Must increment synchronously for accurate limit enforcement
-            DB::table('links')->where('id', $link->id)->increment('click_count');
-        }
-
         return redirect($targetUrl, $link->redirect_type);
     }
 

@@ -40,12 +40,10 @@ class LogClickJob implements ShouldQueue
             $location = $this->getGeolocation($this->clickData['ip_address']);
             $country = $location['country'] ?? null;
             $city = $location['city'] ?? null;
-            $region = $location['region'] ?? null;
         } else {
             // Use existing geo data
             $country = $this->clickData['country'] ?? null;
             $city = $this->clickData['city'] ?? null;
-            $region = $this->clickData['region'] ?? null;
         }
 
         // GA events are sent immediately during redirect, not during job processing

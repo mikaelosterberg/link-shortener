@@ -267,7 +267,7 @@ class GoogleAnalyticsService
             if (! $validationResponse->successful()) {
                 return [
                     'success' => false,
-                    'message' => 'Validation failed: '.$validationResponse->body(),
+                    'message' => 'Connection test failed (Status: '.$validationResponse->status().'): '.$validationResponse->body(),
                 ];
             }
 
@@ -308,7 +308,7 @@ class GoogleAnalyticsService
             $message = $e->getMessage();
             
             // Format specific error types for backward compatibility
-            if (str_contains($message, 'cURL error')) {
+            if (str_contains($message, 'cURL error') || str_contains($message, 'Could not resolve host')) {
                 $message = 'Network error: '.$message;
             } else {
                 $message = 'Connection test failed: '.$message;

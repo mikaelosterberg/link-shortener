@@ -43,6 +43,9 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
         // Mock the GoogleAnalyticsService
         $serviceMock = $this->createMock(GoogleAnalyticsService::class);
         $serviceMock->expects($this->once())
+            ->method('isEnabled')
+            ->willReturn(true);
+        $serviceMock->expects($this->once())
             ->method('sendClickEvent')
             ->with($clickData)
             ->willReturn(true);
@@ -68,6 +71,9 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
         // Mock the GoogleAnalyticsService to return false
         $serviceMock = $this->createMock(GoogleAnalyticsService::class);
         $serviceMock->expects($this->once())
+            ->method('isEnabled')
+            ->willReturn(true);
+        $serviceMock->expects($this->once())
             ->method('sendClickEvent')
             ->with($clickData)
             ->willReturn(false);
@@ -92,6 +98,9 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
 
         // Mock the GoogleAnalyticsService to throw exception
         $serviceMock = $this->createMock(GoogleAnalyticsService::class);
+        $serviceMock->expects($this->once())
+            ->method('isEnabled')
+            ->willReturn(true);
         $serviceMock->expects($this->once())
             ->method('sendClickEvent')
             ->with($clickData)

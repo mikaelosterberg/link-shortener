@@ -159,13 +159,13 @@ class ClickTrackingService
                 $location = $geoService->getLocation($clickData['ip_address']);
                 $clickData['country'] = $location['country'] ?? null;
                 $clickData['city'] = $location['city'] ?? null;
-                $clickData['region'] = $location['region'] ?? null;
             }
 
             // GA events are sent immediately during redirect, not during batch processing
 
             // Prepare for bulk insert
             unset($clickData['increment_click_count']); // Remove non-database field
+            unset($clickData['region']); // Remove region field (not in database schema)
             $clicks[] = $clickData;
 
             // Track which links need count increments
