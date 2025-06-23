@@ -35,8 +35,20 @@ class LogClickJob implements ShouldQueue
      */
     public function handle(): void
     {
-        // Get geolocation data if available
-        $location = $this->getGeolocation($this->clickData['ip_address']);
+        // Get geolocation data if not already present
+        if (empty($this->clickData['country'])) {
+            $location = $this->getGeolocation($this->clickData['ip_address']);
+            $country = $location['country'] ?? null;
+            $city = $location['city'] ?? null;
+            $region = $location['region'] ?? null;
+        } else {
+            // Use existing geo data
+            $country = $this->clickData['country'] ?? null;
+            $city = $this->clickData['city'] ?? null;
+            $region = $this->clickData['region'] ?? null;
+        }
+
+        // GA events are sent immediately during redirect, not during job processing
 
         // Create click record with UTM parameters and A/B test data
         Click::create([
@@ -44,8 +56,8 @@ class LogClickJob implements ShouldQueue
             'ip_address' => $this->clickData['ip_address'],
             'user_agent' => $this->clickData['user_agent'],
             'referer' => $this->clickData['referer'],
-            'country' => $location['country'] ?? null,
-            'city' => $location['city'] ?? null,
+            'country' => $country,
+            'city' => $city,
             'clicked_at' => $this->clickData['clicked_at'],
             'utm_source' => $this->clickData['utm_source'] ?? null,
             'utm_medium' => $this->clickData['utm_medium'] ?? null,
@@ -62,6 +74,7 @@ class LogClickJob implements ShouldQueue
                 ->increment('click_count');
         }
     }
+
 
     /**
      * Get geolocation data for IP address

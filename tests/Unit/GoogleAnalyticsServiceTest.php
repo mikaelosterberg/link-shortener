@@ -107,7 +107,7 @@ class GoogleAnalyticsServiceTest extends TestCase
             $this->assertEquals('page_view', $payload['events'][0]['name']);
 
             // Verify core parameters
-            $params = $payload['events'][0]['parameters'];
+            $params = $payload['events'][0]['params'];
             $expectedShortLink = config('app.url').'/'.$clickData['link_slug'];
             $this->assertEquals($expectedShortLink, $params['page_location']);
             $this->assertEquals($clickData['link_slug'].' - Link Redirect', $params['page_title']);
@@ -122,10 +122,8 @@ class GoogleAnalyticsServiceTest extends TestCase
             $this->assertEquals($clickData['link_slug'], $params['custom_link_slug']);
             $this->assertEquals($clickData['destination_url'], $params['custom_destination_url']);
 
-            // Verify geographic data
-            $this->assertEquals($clickData['country'], $params['country']);
-            $this->assertEquals($clickData['region'], $params['region']);
-            $this->assertEquals($clickData['city'], $params['city']);
+            // Verify IP override is included for correct geographic detection
+            $this->assertEquals($clickData['ip_address'], $payload['ip_override']);
 
             // Verify UTM parameters (mapped to GA4 standard names)
             $this->assertEquals($clickData['utm_source'], $params['source']);

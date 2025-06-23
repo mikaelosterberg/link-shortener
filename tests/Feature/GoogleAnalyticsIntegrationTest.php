@@ -60,10 +60,11 @@ class GoogleAnalyticsIntegrationTest extends TestCase
         });
     }
 
-    public function test_click_tracking_does_not_dispatch_ga_job_when_disabled(): void
+    public function test_click_tracking_handles_ga_job_when_disabled(): void
     {
-        // Don't enable Google Analytics
+        // Don't enable Google Analytics - job should be dispatched but exit early
         Queue::fake();
+        Http::fake(); // No HTTP requests should be made
 
         $clickData = [
             'link_id' => $this->link->id,
@@ -76,7 +77,24 @@ class GoogleAnalyticsIntegrationTest extends TestCase
         $trackingService = app(ClickTrackingService::class);
         $trackingService->trackClick($this->link, $clickData);
 
-        Queue::assertNotPushed(SendGoogleAnalyticsEventJob::class);
+        // Job should be pushed (for consistency) but exit early when processed
+        Queue::assertPushed(SendGoogleAnalyticsEventJob::class);
+        
+        // Process the job to verify it exits early without making HTTP requests
+        $jobs = Queue::pushedJobs();
+        $gaJobs = $jobs[SendGoogleAnalyticsEventJob::class] ?? [];
+        $this->assertCount(1, $gaJobs);
+        
+        $gaClickData = array_merge($clickData, [
+            'link_slug' => $this->link->short_code,
+            'destination_url' => $this->link->original_url,
+        ]);
+        
+        $job = new SendGoogleAnalyticsEventJob($gaClickData);
+        $job->handle(app(GoogleAnalyticsService::class));
+        
+        // Verify no HTTP requests were made when GA is disabled
+        Http::assertNothingSent();
     }
 
     public function test_redirect_with_google_analytics_integration(): void
@@ -132,7 +150,7 @@ class GoogleAnalyticsIntegrationTest extends TestCase
             // Verify it's sent as a page_view event
             $this->assertEquals('page_view', $payload['events'][0]['name']);
 
-            $params = $payload['events'][0]['parameters'];
+            $params = $payload['events'][0]['params'];
 
             // Verify core page view parameters
             $expectedShortLink = config('app.url').'/'.$clickData['link_slug'];
@@ -145,10 +163,8 @@ class GoogleAnalyticsIntegrationTest extends TestCase
             $this->assertEquals($clickData['link_slug'], $params['custom_link_slug']);
             $this->assertEquals($clickData['destination_url'], $params['custom_destination_url']);
 
-            // Verify geographic parameters
-            $this->assertEquals($clickData['country'], $params['country']);
-            $this->assertEquals($clickData['region'], $params['region']);
-            $this->assertEquals($clickData['city'], $params['city']);
+            // Verify IP override is included for correct geographic detection
+            $this->assertEquals($clickData['ip_address'], $payload['ip_override']);
 
             // Verify all UTM parameters (mapped to GA4 standard names)
             $this->assertEquals($clickData['utm_source'], $params['source']);
@@ -187,7 +203,7 @@ class GoogleAnalyticsIntegrationTest extends TestCase
 
         Http::assertSent(function ($request) use ($clickData) {
             $payload = json_decode($request->body(), true);
-            $params = $payload['events'][0]['parameters'];
+            $params = $payload['events'][0]['params'];
 
             $this->assertEquals($clickData['ab_test_id'], $params['ab_test_id']);
             $this->assertEquals($clickData['ab_variant_id'], $params['ab_variant_id']);
@@ -234,7 +250,7 @@ class GoogleAnalyticsIntegrationTest extends TestCase
 
         // This should not throw an exception even if GA fails
         $job = new SendGoogleAnalyticsEventJob($clickData);
-        $result = $job->handle();
+        $result = $job->handle(app(GoogleAnalyticsService::class));
 
         // Verify GA was attempted but failed gracefully
         Http::assertSent(function ($request) {
@@ -327,8 +343,8 @@ class GoogleAnalyticsIntegrationTest extends TestCase
         $payload2 = json_decode($requests[1][0]->body(), true);
 
         $this->assertNotEquals($payload1['client_id'], $payload2['client_id']);
-        $this->assertEquals('email', $payload1['events'][0]['parameters']['utm_source']);
-        $this->assertEquals('social', $payload2['events'][0]['parameters']['utm_source']);
+        $this->assertEquals('email', $payload1['events'][0]['params']['source']);
+        $this->assertEquals('social', $payload2['events'][0]['params']['source']);
     }
 
     protected function enableGoogleAnalytics(): void

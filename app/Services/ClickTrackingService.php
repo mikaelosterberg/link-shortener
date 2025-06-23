@@ -154,12 +154,15 @@ class ClickTrackingService
                 continue;
             }
 
-            // Add geolocation data if available
-            if ($geoService && ! empty($clickData['ip_address'])) {
+            // Add geolocation data if not already present
+            if ($geoService && ! empty($clickData['ip_address']) && empty($clickData['country'])) {
                 $location = $geoService->getLocation($clickData['ip_address']);
                 $clickData['country'] = $location['country'] ?? null;
                 $clickData['city'] = $location['city'] ?? null;
+                $clickData['region'] = $location['region'] ?? null;
             }
+
+            // GA events are sent immediately during redirect, not during batch processing
 
             // Prepare for bulk insert
             unset($clickData['increment_click_count']); // Remove non-database field
@@ -224,8 +227,9 @@ class ClickTrackingService
         return $link->click_count;
     }
 
+
     /**
-     * Send click data to Google Analytics if enabled
+     * Send click data to Google Analytics if enabled (original method for immediate sending)
      */
     private function sendToGoogleAnalytics(Link $link, array $clickData): void
     {

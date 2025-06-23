@@ -50,7 +50,7 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
         $this->app->instance(GoogleAnalyticsService::class, $serviceMock);
 
         $job = new SendGoogleAnalyticsEventJob($clickData);
-        $job->handle();
+        $job->handle(app(GoogleAnalyticsService::class));
 
         // If we get here without exception, the job handled successfully
         $this->assertTrue(true);
@@ -75,7 +75,7 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
         $this->app->instance(GoogleAnalyticsService::class, $serviceMock);
 
         $job = new SendGoogleAnalyticsEventJob($clickData);
-        $job->handle();
+        $job->handle(app(GoogleAnalyticsService::class));
 
         // Job should handle failure gracefully without throwing exception
         $this->assertTrue(true);
@@ -100,7 +100,7 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
         $this->app->instance(GoogleAnalyticsService::class, $serviceMock);
 
         $job = new SendGoogleAnalyticsEventJob($clickData);
-        $job->handle();
+        $job->handle(app(GoogleAnalyticsService::class));
 
         // Job should handle exception gracefully without rethrowing
         $this->assertTrue(true);
@@ -176,7 +176,7 @@ class SendGoogleAnalyticsEventJobTest extends TestCase
         ];
 
         $job = new SendGoogleAnalyticsEventJob($clickData);
-        $job->handle();
+        $job->handle(app(GoogleAnalyticsService::class));
 
         // Should not throw exception even when GA is disabled
         $this->assertTrue(true);

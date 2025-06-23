@@ -106,6 +106,9 @@ class IntegrationsSettings extends Page
             IntegrationSetting::where('provider', 'google_analytics')->update(['is_active' => false]);
         }
 
+        // Clear GA caches when settings are updated
+        GoogleAnalyticsService::clearCache();
+
         Notification::make()
             ->title('Integration settings saved')
             ->success()

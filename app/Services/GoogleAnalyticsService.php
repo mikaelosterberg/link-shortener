@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\IntegrationSetting;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +16,9 @@ class GoogleAnalyticsService
      */
     public function isEnabled(): bool
     {
-        return IntegrationSetting::get('google_analytics', 'enabled', false) &&
+        return Cache::remember('ga_enabled', 300, function () {
+            return IntegrationSetting::get('google_analytics', 'enabled', false);
+        }) &&
                ! empty($this->getMeasurementId()) &&
                ! empty($this->getApiSecret());
     }
@@ -34,19 +37,17 @@ class GoogleAnalyticsService
 
             $response = Http::timeout(5)
                 ->withOptions([
-                    'verify' => config('app.env') === 'production', // Only verify SSL in production
+                    'verify' => config('app.env') === 'production',
                     'curl' => [
-                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4, // Force IPv4
+                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
                     ],
                 ])
                 ->post($this->buildEndpointUrl(), $payload);
 
             if ($response->successful()) {
-                Log::debug('GA4 event sent successfully', ['click_id' => $clickData['click_id'] ?? null]);
-
                 return true;
             } else {
-                Log::warning('GA4 event failed', [
+                Log::error('GA4 event failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'click_id' => $clickData['click_id'] ?? null,
@@ -76,46 +77,49 @@ class GoogleAnalyticsService
     }
 
     /**
-     * Build the event payload for GA4
+     * Generate a proper GA4 client ID
+     */
+    private function generateClientId(): string
+    {
+        return sprintf('%09d.%010d', mt_rand(100000000, 999999999), time());
+    }
+
+    /**
+     * Build the event payload for GA4 - using 'params' not 'parameters'
      */
     private function buildEventPayload(array $clickData): array
     {
-        // Generate a unique client_id for this click (GA4 requirement)
-        // For debug mode, use a consistent test client ID
-        $clientId = $clickData['session_id'] ?? 'test-client-'.time();
+        // Generate client_id
+        $clientId = $clickData['session_id'] ?? $this->generateClientId();
 
-        // Build the base event as page_view for standard GA4 reports
-        // Use the short link URL as page_location since GA4 only accepts same-domain URLs
-        $shortLinkUrl = config('app.url').'/'.($clickData['link_slug'] ?? 'unknown');
+        // Use the short link URL as page_location
+        $pageLocation = config('app.url').'/'.($clickData['link_slug'] ?? 'unknown');
 
-        $event = [
-            'name' => 'page_view',
-            'parameters' => [
-                'page_location' => $shortLinkUrl,
-                'page_title' => ($clickData['link_slug'] ?? 'Unknown').' - Link Redirect',
-                'page_referrer' => $clickData['referrer'] ?? null,
-                // Recommended GA4 parameters
-                'session_id' => $clickData['session_id'] ?? $clientId,
-                'engagement_time_msec' => 100, // Minimal engagement time for page views
-                // Custom parameters for link tracking
-                'custom_link_id' => $clickData['link_id'] ?? null,
-                'custom_link_slug' => $clickData['link_slug'] ?? null,
-                'custom_destination_url' => $clickData['destination_url'] ?? null,
-            ],
+        // Build event with 'params' (not 'parameters')
+        $eventParams = [
+            'page_location' => $pageLocation,
+            'page_title' => ($clickData['link_slug'] ?? 'Unknown').' - Link Redirect',
+            'engagement_time_msec' => 100,
+            'custom_link_id' => $clickData['link_id'] ?? null,
+            'custom_link_slug' => $clickData['link_slug'] ?? null,
+            'custom_destination_url' => $clickData['destination_url'] ?? null,
         ];
 
-        // Add geographic data if available
-        if (! empty($clickData['country'])) {
-            $event['parameters']['country'] = $clickData['country'];
-        }
-        if (! empty($clickData['region'])) {
-            $event['parameters']['region'] = $clickData['region'];
-        }
-        if (! empty($clickData['city'])) {
-            $event['parameters']['city'] = $clickData['city'];
+        // Add optional parameters only if they exist
+        $referrer = $clickData['referrer'] ?? $clickData['referer'] ?? null;
+        if (! empty($referrer)) {
+            $eventParams['page_referrer'] = $referrer;
         }
 
-        // Add UTM parameters if available (map to GA4 standard parameter names)
+        if (! empty($clickData['session_id'])) {
+            $eventParams['session_id'] = $clickData['session_id'];
+        } elseif (! empty($clientId)) {
+            $eventParams['session_id'] = $clientId;
+        }
+
+        // Geographic data will be automatically determined by GA4 from ip_override
+
+        // Add UTM parameters
         $utmMapping = [
             'utm_source' => 'source',
             'utm_medium' => 'medium',
@@ -126,40 +130,51 @@ class GoogleAnalyticsService
 
         foreach ($utmMapping as $utmParam => $gaParam) {
             if (! empty($clickData[$utmParam])) {
-                $event['parameters'][$gaParam] = $clickData[$utmParam];
+                $eventParams[$gaParam] = $clickData[$utmParam];
             }
         }
 
-        // Add A/B test data if available
+        // Add A/B test data
         if (! empty($clickData['ab_test_id'])) {
-            $event['parameters']['ab_test_id'] = $clickData['ab_test_id'];
-            $event['parameters']['ab_variant_id'] = $clickData['ab_variant_id'] ?? null;
+            $eventParams['ab_test_id'] = $clickData['ab_test_id'];
+            $eventParams['ab_variant_id'] = $clickData['ab_variant_id'] ?? null;
         }
 
-        // Add device/browser info if available
+        // Add device/browser info
         if (! empty($clickData['device_type'])) {
-            $event['parameters']['device_type'] = $clickData['device_type'];
+            $eventParams['device_type'] = $clickData['device_type'];
         }
         if (! empty($clickData['browser'])) {
-            $event['parameters']['browser'] = $clickData['browser'];
+            $eventParams['browser'] = $clickData['browser'];
         }
         if (! empty($clickData['os'])) {
-            $event['parameters']['operating_system'] = $clickData['os'];
+            $eventParams['operating_system'] = $clickData['os'];
         }
 
+        // Add debug_mode for test events
+        if (! empty($clickData['is_debug'])) {
+            $eventParams['debug_mode'] = 1;
+        }
+
+        // Build the complete event
+        $event = [
+            'name' => 'page_view',
+            'params' => $eventParams,
+        ];
+
+        // Build final payload
         $payload = [
             'client_id' => $clientId,
             'events' => [$event],
         ];
 
-        // Add session_id at payload level if available (GA4 recommendation)
-        if (! empty($clickData['session_id'])) {
-            $payload['session_id'] = $clickData['session_id'];
+        // Include the original client IP so GA4 can determine correct geography
+        if (! empty($clickData['ip_address'])) {
+            $payload['ip_override'] = $clickData['ip_address'];
         }
 
-        // Add timestamp if click time is available (important for queued processing)
+        // Add timestamp if available
         if (! empty($clickData['clicked_at'])) {
-            // Convert clicked_at to timestamp_micros (microseconds since Unix epoch)
             $clickedAt = is_string($clickData['clicked_at'])
                 ? \Carbon\Carbon::parse($clickData['clicked_at'])
                 : $clickData['clicked_at'];
@@ -175,7 +190,9 @@ class GoogleAnalyticsService
      */
     private function getMeasurementId(): ?string
     {
-        return IntegrationSetting::get('google_analytics', 'measurement_id');
+        return Cache::remember('ga_measurement_id', 3600, function () {
+            return IntegrationSetting::get('google_analytics', 'measurement_id');
+        });
     }
 
     /**
@@ -183,11 +200,23 @@ class GoogleAnalyticsService
      */
     private function getApiSecret(): ?string
     {
-        return IntegrationSetting::get('google_analytics', 'api_secret');
+        return Cache::remember('ga_api_secret', 3600, function () {
+            return IntegrationSetting::get('google_analytics', 'api_secret');
+        });
     }
 
     /**
-     * Test the GA4 connection by sending a test event
+     * Clear all cached Google Analytics settings
+     */
+    public static function clearCache(): void
+    {
+        Cache::forget('ga_enabled');
+        Cache::forget('ga_measurement_id');
+        Cache::forget('ga_api_secret');
+    }
+
+    /**
+     * Test the GA4 connection
      */
     public function testConnection(): array
     {
@@ -205,76 +234,89 @@ class GoogleAnalyticsService
         if ($ip === $host) {
             return [
                 'success' => false,
-                'message' => 'Cannot resolve DNS for Google Analytics (www.google-analytics.com). Check your internet connection or DNS settings.',
+                'message' => 'Cannot resolve DNS for Google Analytics. Check your internet connection.',
             ];
         }
 
         try {
-            // Use a properly formatted client_id for DebugView compatibility
-            $testClientId = 'test-client-'.substr(md5(uniqid()), 0, 8).'.'.time();
+            $testClientId = $this->generateClientId();
 
             $testData = [
                 'link_id' => 'test',
                 'link_slug' => 'ga4-test-connection',
-                'destination_url' => 'https://example.com/ga4-integration-test',
-                'user_agent' => 'LinkShortener-Test/1.0',
+                'destination_url' => config('app.url').'/ga4-integration-test',
                 'referrer' => config('app.url'),
-                'session_id' => $testClientId, // Use consistent client_id for debug tracking
+                'session_id' => $testClientId,
+                'is_debug' => true,
             ];
-
-            // Use validation endpoint for testing (doesn't count in analytics)
-            $endpoint = $this->buildEndpointUrl().'&debug_mode=1';
 
             $payload = $this->buildEventPayload($testData);
 
-            // Log the endpoint URL and payload for debugging
-            Log::debug('GA4 test request', [
-                'url' => $endpoint,
-                'payload' => $payload,
-                'measurement_id' => $this->getMeasurementId(),
-            ]);
+            // Test with validation endpoint first
+            $validationEndpoint = str_replace('/mp/collect', '/debug/mp/collect', $this->buildEndpointUrl());
+
+            $validationResponse = Http::timeout(10)
+                ->withOptions([
+                    'verify' => config('app.env') === 'production',
+                    'curl' => [
+                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                    ],
+                ])
+                ->post($validationEndpoint, $payload);
+
+            if (! $validationResponse->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'Validation failed: '.$validationResponse->body(),
+                ];
+            }
+
+            $validationBody = $validationResponse->json();
+            if (! empty($validationBody['validationMessages'])) {
+                $errors = collect($validationBody['validationMessages'])->pluck('description')->implode('; ');
+
+                return [
+                    'success' => false,
+                    'message' => 'Payload validation errors: '.$errors,
+                ];
+            }
+
+            // Send to production endpoint
+            $productionEndpoint = $this->buildEndpointUrl();
 
             $response = Http::timeout(10)
                 ->withOptions([
-                    'verify' => config('app.env') === 'production', // Only verify SSL in production
+                    'verify' => config('app.env') === 'production',
                     'curl' => [
-                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4, // Force IPv4
+                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
                     ],
                 ])
-                ->post($endpoint, $payload);
-
-            // Log the response for debugging
-            Log::debug('GA4 test response', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'headers' => $response->headers(),
-            ]);
+                ->post($productionEndpoint, $payload);
 
             if ($response->successful()) {
                 return [
                     'success' => true,
-                    'message' => 'Google Analytics connection test successful. Check your GA4 DebugView for the test event.',
+                    'message' => 'Google Analytics connection test successful! Events should appear in your GA4 Real-time reports within a few seconds.',
                 ];
             } else {
                 return [
                     'success' => false,
-                    'message' => 'Connection test failed (Status: '.$response->status().'): '.$response->body(),
+                    'message' => 'Production test failed: '.$response->body(),
                 ];
             }
         } catch (\Exception $e) {
             $message = $e->getMessage();
-
-            // Show the actual error without making assumptions
-            if (str_contains($message, 'Could not resolve host') || str_contains($message, 'cURL error')) {
-                return [
-                    'success' => false,
-                    'message' => 'Network error: '.$message,
-                ];
+            
+            // Format specific error types for backward compatibility
+            if (str_contains($message, 'cURL error')) {
+                $message = 'Network error: '.$message;
+            } else {
+                $message = 'Connection test failed: '.$message;
             }
-
+            
             return [
                 'success' => false,
-                'message' => 'Connection test failed: '.$message,
+                'message' => $message,
             ];
         }
     }
