@@ -14,7 +14,7 @@ class AbTestStatsWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 10;
 
     public function table(Table $table): Table
     {

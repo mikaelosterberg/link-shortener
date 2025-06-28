@@ -227,7 +227,6 @@ class ClickTrackingService
         return $link->click_count;
     }
 
-
     /**
      * Send click data to Google Analytics if enabled (original method for immediate sending)
      */

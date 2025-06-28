@@ -306,14 +306,14 @@ class GoogleAnalyticsService
             }
         } catch (\Exception $e) {
             $message = $e->getMessage();
-            
+
             // Format specific error types for backward compatibility
             if (str_contains($message, 'cURL error') || str_contains($message, 'Could not resolve host')) {
                 $message = 'Network error: '.$message;
             } else {
                 $message = 'Connection test failed: '.$message;
             }
-            
+
             return [
                 'success' => false,
                 'message' => $message,

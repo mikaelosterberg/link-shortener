@@ -79,20 +79,20 @@ class GoogleAnalyticsIntegrationTest extends TestCase
 
         // Job should be pushed (for consistency) but exit early when processed
         Queue::assertPushed(SendGoogleAnalyticsEventJob::class);
-        
+
         // Process the job to verify it exits early without making HTTP requests
         $jobs = Queue::pushedJobs();
         $gaJobs = $jobs[SendGoogleAnalyticsEventJob::class] ?? [];
         $this->assertCount(1, $gaJobs);
-        
+
         $gaClickData = array_merge($clickData, [
             'link_slug' => $this->link->short_code,
             'destination_url' => $this->link->original_url,
         ]);
-        
+
         $job = new SendGoogleAnalyticsEventJob($gaClickData);
         $job->handle(app(GoogleAnalyticsService::class));
-        
+
         // Verify no HTTP requests were made when GA is disabled
         Http::assertNothingSent();
     }

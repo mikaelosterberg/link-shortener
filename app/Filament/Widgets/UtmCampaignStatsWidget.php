@@ -16,7 +16,7 @@ class UtmCampaignStatsWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?int $sort = 6;
+    protected static ?int $sort = 9;
 
     public function getTableRecordKey($record): string
     {

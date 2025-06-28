@@ -17,18 +17,14 @@ class TopLinksWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    public ?string $filter = '7';
-
     public function table(Table $table): Table
     {
-        $days = (int) $this->filter;
-
         return $table
             ->query(
                 Link::query()
                     ->with('group')
-                    ->withCount(['clicks' => function (Builder $query) use ($days) {
-                        $query->where('clicked_at', '>=', now()->subDays($days));
+                    ->withCount(['clicks' => function (Builder $query) {
+                        $query->where('clicked_at', '>=', now()->subDays(7));
                     }])
                     ->orderByDesc('clicks_count')
                     ->limit(10)
@@ -54,7 +50,7 @@ class TopLinksWidget extends BaseWidget
                     ->weight('medium'),
 
                 TextColumn::make('clicks_count')
-                    ->label(fn () => 'Clicks ('.$this->getFilterLabel().')')
+                    ->label('Clicks (7 days)')
                     ->badge()
                     ->color('success'),
 
@@ -65,42 +61,8 @@ class TopLinksWidget extends BaseWidget
 
                 TextColumn::make('created_at')
                     ->label('Created')
-                    ->since()
-                    ->sortable(),
+                    ->since(),
             ])
             ->paginated(false);
-    }
-
-    protected function getFilters(): ?array
-    {
-        return [
-            '7' => 'Last 7 days',
-            '30' => 'Last 30 days',
-            '90' => 'Last 3 months',
-        ];
-    }
-
-    public function getHeading(): string
-    {
-        $filterLabels = [
-            '7' => 'Last 7 Days',
-            '30' => 'Last 30 Days',
-            '90' => 'Last 3 Months',
-        ];
-
-        $selectedLabel = $filterLabels[$this->filter] ?? 'Last 7 Days';
-
-        return 'Most Clicked Links ('.$selectedLabel.')';
-    }
-
-    private function getFilterLabel(): string
-    {
-        $filterLabels = [
-            '7' => '7 days',
-            '30' => '30 days',
-            '90' => '3 months',
-        ];
-
-        return $filterLabels[$this->filter] ?? '7 days';
     }
 }

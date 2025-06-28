@@ -4,8 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Click;
 use App\Models\Link;
-use App\Services\TimezoneService;
-use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -16,33 +14,19 @@ class OverviewStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Get user's timezone for display, but use simpler date calculations for reliability
-        $userTimezone = TimezoneService::getUserTimezone();
+        // Use rolling time windows for consistent results across timezones
+        $now = now();
+        $last24Hours = $now->copy()->subHours(24);
+        $last7Days = $now->copy()->subDays(7);
 
-        try {
-            $userToday = Carbon::now($userTimezone)->startOfDay();
-            $userYesterday = $userToday->copy()->subDay();
-            $userWeekAgo = $userToday->copy()->subDays(7);
+        // Total links
+        $totalLinks = Link::count();
+        $activeLinks = Link::where('is_active', true)->count();
 
-            // Total links
-            $totalLinks = Link::count();
-            $activeLinks = Link::where('is_active', true)->count();
-
-            // Total clicks (timezone-aware)
-            $totalClicks = Click::count();
-            $todayClicks = Click::whereBetween('clicked_at', [
-                $userToday->utc(),
-                $userToday->copy()->endOfDay()->utc(),
-            ])->count();
-            $weekClicks = Click::where('clicked_at', '>=', $userWeekAgo->utc())->count();
-        } catch (\Exception $e) {
-            // Fallback to UTC calculations if timezone conversion fails
-            $totalLinks = Link::count();
-            $activeLinks = Link::where('is_active', true)->count();
-            $totalClicks = Click::count();
-            $todayClicks = Click::whereDate('clicked_at', today())->count();
-            $weekClicks = Click::where('clicked_at', '>=', now()->subDays(7))->count();
-        }
+        // Total clicks with rolling windows
+        $totalClicks = Click::count();
+        $last24HourClicks = Click::where('clicked_at', '>=', $last24Hours)->count();
+        $weekClicks = Click::where('clicked_at', '>=', $last7Days)->count();
 
         // Average clicks per link
         $avgClicksPerLink = $totalLinks > 0 ? round($totalClicks / $totalLinks, 1) : 0;
@@ -64,7 +48,7 @@ class OverviewStatsWidget extends BaseWidget
                 ->color('primary'),
 
             Stat::make('Total Clicks', number_format($totalClicks))
-                ->description("Today: {$todayClicks} | Week: {$weekClicks}")
+                ->description("Last 24h: {$last24HourClicks} | Last 7d: {$weekClicks}")
                 ->descriptionIcon('heroicon-m-cursor-arrow-rays')
                 ->color('success'),
 
@@ -82,26 +66,28 @@ class OverviewStatsWidget extends BaseWidget
 
     private function getClickRate(): string
     {
-        // Use simple UTC calculations for reliability
-        $todayClicks = Click::whereDate('clicked_at', today())->count();
-        $yesterdayClicks = Click::whereDate('clicked_at', today()->subDay())->count();
+        // Use rolling 24-hour windows for consistent comparison
+        $now = now();
+        $last24Hours = Click::whereBetween('clicked_at', [$now->copy()->subHours(24), $now])->count();
+        $previous24Hours = Click::whereBetween('clicked_at', [$now->copy()->subHours(48), $now->copy()->subHours(24)])->count();
 
-        if ($yesterdayClicks == 0) {
-            return $todayClicks > 0 ? '+100%' : '0%';
+        if ($previous24Hours == 0) {
+            return $last24Hours > 0 ? '+100%' : '0%';
         }
 
-        $change = (($todayClicks - $yesterdayClicks) / $yesterdayClicks) * 100;
+        $change = (($last24Hours - $previous24Hours) / $previous24Hours) * 100;
 
         return ($change >= 0 ? '+' : '').round($change, 1).'%';
     }
 
     private function getClickRateDescription(): string
     {
-        // For now, let's use simple UTC calculations to ensure it works
-        $todayClicks = Click::whereDate('clicked_at', today())->count();
-        $yesterdayClicks = Click::whereDate('clicked_at', today()->subDay())->count();
+        // Use same rolling windows as getClickRate() for consistency
+        $now = now();
+        $last24Hours = Click::whereBetween('clicked_at', [$now->copy()->subHours(24), $now])->count();
+        $previous24Hours = Click::whereBetween('clicked_at', [$now->copy()->subHours(48), $now->copy()->subHours(24)])->count();
 
-        return "Today: {$todayClicks} vs Yesterday: {$yesterdayClicks}";
+        return "Last 24h: {$last24Hours} vs Previous 24h: {$previous24Hours}";
     }
 
     private function getClickRateColor(): string

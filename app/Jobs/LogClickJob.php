@@ -73,7 +73,6 @@ class LogClickJob implements ShouldQueue
         }
     }
 
-
     /**
      * Get geolocation data for IP address
      */

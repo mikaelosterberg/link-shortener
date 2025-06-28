@@ -9,7 +9,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class TopReferrersWidget extends BaseWidget
 {
-    protected static ?int $sort = 8;
+    protected static ?int $sort = 11;
 
     protected int|string|array $columnSpan = 'full';
 
