@@ -130,6 +130,23 @@ class LinkResource extends Resource
                     ])
                     ->visible(fn ($record) => $record !== null)
                     ->collapsible(),
+
+                // Creation info section - only show when editing
+                Forms\Components\Section::make('Creation Information')
+                    ->schema([
+                        Forms\Components\Placeholder::make('created_by_info')
+                            ->label('Created by')
+                            ->content(fn ($record) => $record?->creator?->name ?? 'Unknown'),
+                        Forms\Components\Placeholder::make('created_at_info')
+                            ->label('Created on')
+                            ->content(fn ($record) => $record ? TimezoneService::formatForUser($record->created_at, 'M j, Y g:i A') : null),
+                        Forms\Components\Placeholder::make('updated_at_info')
+                            ->label('Last updated')
+                            ->content(fn ($record) => $record ? TimezoneService::formatForUser($record->updated_at, 'M j, Y g:i A') : null),
+                    ])
+                    ->columns(3)
+                    ->visible(fn ($record) => $record !== null)
+                    ->collapsed(),
             ]);
     }
 
@@ -219,12 +236,12 @@ class LinkResource extends Resource
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
-                    ->formatStateUsing(fn ($state) => TimezoneService::formatForUser($state, 'M j, Y'))
+                    ->formatStateUsing(fn ($state) => TimezoneService::formatForUser($state, 'M j, Y g:i A'))
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
