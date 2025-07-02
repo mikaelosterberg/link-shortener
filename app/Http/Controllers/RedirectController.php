@@ -165,6 +165,12 @@ class RedirectController extends Controller
         // Track click using configured method
         $clickTracking->trackClick($link, $clickData);
 
+        // For links with click limits using queue method, increment synchronously for accurate enforcement
+        $trackingMethod = config('shortener.analytics.click_tracking_method', 'queue');
+        if ($link->click_limit !== null && $trackingMethod === 'queue') {
+            DB::table('links')->where('id', $link->id)->increment('click_count');
+        }
+
         return redirect($targetUrl, $link->redirect_type);
     }
 
