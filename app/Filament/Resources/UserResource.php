@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
@@ -71,13 +72,37 @@ class UserResource extends Resource
 
                 Forms\Components\TextInput::make('password')
                     ->password()
+                    ->default(fn () => Str::password(12))
                     ->required(fn (string $context): bool => $context === 'create')
                     ->dehydrated(fn ($state) => filled($state))
                     ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                    ->revealable()
                     ->helperText(fn (string $context): string => $context === 'edit'
-                            ? 'Leave blank to keep current password'
-                            : 'Enter a secure password'
+                        ? __('filament.user.password_edit_help')
+                        : __('filament.user.password_create_help')
+                    )
+                    ->suffixAction(
+                        fn (string $context) => $context === 'create'
+                            ? Forms\Components\Actions\Action::make('regenerate')
+                                ->icon('heroicon-o-arrow-path')
+                                ->tooltip(__('filament.user.regenerate_password'))
+                                ->action(fn ($set) => $set('password', Str::password(12)))
+                            : null
                     ),
+
+                Forms\Components\Checkbox::make('send_welcome_email')
+                    ->label(__('filament.user.send_welcome_email'))
+                    ->default(true)
+                    ->visible(fn () => static::isEmailConfigured())
+                    ->hiddenOn('edit')
+                    ->columnSpanFull(),
+
+                Forms\Components\Placeholder::make('email_not_configured')
+                    ->hiddenLabel()
+                    ->content(__('filament.user.email_not_configured'))
+                    ->visible(fn () => ! static::isEmailConfigured())
+                    ->hiddenOn('edit')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -155,5 +180,15 @@ class UserResource extends Resource
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Check if email is properly configured for sending emails
+     */
+    public static function isEmailConfigured(): bool
+    {
+        $panelProvider = new \App\Providers\Filament\AdminPanelProvider(app());
+
+        return $panelProvider->isEmailConfigured();
     }
 }

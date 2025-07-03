@@ -31,13 +31,43 @@ class AdminPanelProvider extends PanelProvider
         ]);
     }
 
+    /**
+     * Check if email is properly configured for sending emails
+     */
+    public function isEmailConfigured(): bool
+    {
+        $mailer = config('mail.default');
+
+        // If mailer is 'log' or 'array', it's not configured for real email sending
+        if (in_array($mailer, ['log', 'array', 'null'])) {
+            return false;
+        }
+
+        // For SMTP, check if host is configured
+        if ($mailer === 'smtp') {
+            return ! empty(config('mail.mailers.smtp.host')) &&
+                   config('mail.mailers.smtp.host') !== '127.0.0.1' &&
+                   config('mail.mailers.smtp.host') !== 'localhost';
+        }
+
+        // For other mailers (mailgun, ses, etc.), assume they're configured if not log/array
+        return true;
+    }
+
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login();
+
+        // Only enable password reset if email is configured
+        if ($this->isEmailConfigured()) {
+            $panel->passwordReset();
+        }
+
+        return $panel
             ->colors([
                 'primary' => Color::Amber,
             ])

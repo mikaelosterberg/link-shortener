@@ -249,13 +249,13 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    QUEUE_CONNECTION=database
    
    # Run the queue worker:
-   php artisan queue:work --queue=default,clicks,health-checks,analytics,analytics
+   php artisan queue:work --queue=default,clicks,health-checks,analytics
    ```
    
    **Option C: Cron Job for Shared Hosting**
    ```bash
    # Add to your crontab:
-   * * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks,analytics,analytics --stop-when-empty --max-time=59 >> /dev/null 2>&1
+   * * * * * cd /path/to/project && php artisan queue:work --queue=default,clicks,health-checks,analytics --stop-when-empty --max-time=59 >> /dev/null 2>&1
    ```
    
    **Option D: Redis Queue for High Performance**
