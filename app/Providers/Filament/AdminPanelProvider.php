@@ -8,6 +8,7 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -61,6 +62,12 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\TopReferrersWidget::class,
                 \App\Filament\Widgets\AbTestStatsWidget::class,
                 \App\Filament\Widgets\UtmCampaignStatsWidget::class,
+            ])
+            ->navigationGroups([
+                NavigationGroup::make('Link Management'),
+                NavigationGroup::make('Analytics'),
+                NavigationGroup::make('Settings'),
+                NavigationGroup::make('System'),
             ])
             ->middleware([
                 EncryptCookies::class,
