@@ -42,11 +42,11 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 
 ### 🛡️ Admin & Security
 - **Filament Admin Panel** - Modern, responsive admin interface
-- **Role-based Permissions** - Complete permission system with 4 roles:
+- **Role-based Permissions** - Flexible permission system with pre-defined roles for convenience:
   - `super_admin` - Unrestricted access to everything
   - `admin` - Limited permissions (configurable)
   - `user` - Basic role for regular users
-  - `panel_user` - Basic panel access
+  - Administrators can create additional custom roles as needed
 - **User Management** - Complete user administration with role assignment
 - **User Profile Settings** - Password changes and preferences from user menu
 - **API Key Management** - Secure key generation with visible keys and easy copying
@@ -299,7 +299,7 @@ Once you have a super admin account set up, you can manage other users:
 2. Navigate to "Settings" → "Users"
 3. Click "Create User"
 4. Fill in name, email, password
-5. Select a role (`admin`, `user`, or `panel_user`)
+5. Select a role (any existing role or create new ones as needed)
 6. Toggle "Email Verified" if needed
 7. Save to create the user
 
@@ -307,12 +307,12 @@ Once you have a super admin account set up, you can manage other users:
 - **Super Admin**: Can do everything, manage all users and roles
 - **Admin**: Limited permissions based on what you assign in "Settings" → "Roles"
 - **User**: Basic role, assign permissions as needed
-- **Panel User**: Basic panel access
+- **Custom Roles**: Create additional roles with specific permissions tailored to your needs
 
 **Managing Roles:**
 1. Go to "Settings" → "Roles"
-2. Click on a role name (e.g., "admin") 
-3. Check/uncheck permissions for that role
+2. Click "Create Role" to add new roles or click existing role names to edit
+3. Check/uncheck permissions for each role
 4. Users with that role will immediately have those permissions
 
 **Important Security Notes:**
@@ -514,7 +514,7 @@ php artisan roles:setup --role=user --role=panel_user
 - **super_admin**: All permissions (automatic, cannot be changed)
 - **admin**: Full link management, groups, API keys, all dashboard widgets
 - **user**: Basic link management, view groups, limited dashboard widgets
-- **panel_user**: View-only access to own links and profile
+- **Custom roles**: Define permissions based on your specific needs
 
 **Manual Permission Management:**
 You can always customize permissions in the admin panel at "Settings" → "Roles".

@@ -443,7 +443,7 @@ class InstallCommand extends Command
         $this->info('📋 What\'s been set up:');
         $this->line('  • Database tables created and migrated');
         $this->line('  • Admin user created with super_admin permissions');
-        $this->line('  • All roles configured (super_admin, admin, user, panel_user)');
+        $this->line('  • All roles configured (super_admin, admin, user)');
         $this->line('  • Default permissions assigned to each role');
         $this->line('  • Storage directories created with proper permissions');
         $this->line('  • Storage symbolic link created');

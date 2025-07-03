@@ -13,7 +13,7 @@ class ShieldSeeder extends Seeder
      */
     public function run(): void
     {
-        $roles = ['super_admin', 'admin', 'user', 'panel_user'];
+        $roles = ['super_admin', 'admin', 'user'];
 
         foreach ($roles as $roleName) {
             Role::firstOrCreate([

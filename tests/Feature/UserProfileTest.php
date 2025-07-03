@@ -24,7 +24,7 @@ class UserProfileTest extends TestCase
         ]);
 
         // Create a simple role for testing (since roles:setup isn't working in tests)
-        $role = \Spatie\Permission\Models\Role::create(['name' => 'panel_user']);
+        $role = \Spatie\Permission\Models\Role::create(['name' => 'user']);
         $this->user->assignRole($role);
     }
 

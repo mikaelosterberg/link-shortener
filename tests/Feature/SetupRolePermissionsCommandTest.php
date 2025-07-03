@@ -19,7 +19,6 @@ class SetupRolePermissionsCommandTest extends TestCase
         Role::create(['name' => 'super_admin']);
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'user']);
-        Role::create(['name' => 'panel_user']);
 
         // Create some test permissions
         $permissions = [
@@ -56,11 +55,7 @@ class SetupRolePermissionsCommandTest extends TestCase
         $this->assertTrue($userRole->hasPermissionTo('widget_OverviewStatsWidget'));
         $this->assertFalse($userRole->hasPermissionTo('widget_LinkHealthWidget')); // Admin only
 
-        // Check panel_user role permissions
-        $panelUserRole = Role::findByName('panel_user');
-        $this->assertTrue($panelUserRole->hasPermissionTo('view_link'));
-        $this->assertTrue($panelUserRole->hasPermissionTo('page_UserProfile'));
-        $this->assertFalse($panelUserRole->hasPermissionTo('create_link')); // View only
+        // panel_user role has been removed from the system
     }
 
     public function test_setup_command_with_specific_role(): void
@@ -133,7 +128,7 @@ class SetupRolePermissionsCommandTest extends TestCase
             ->expectsOutput('📋 Summary:')
             ->expectsOutputToContain('admin:')
             ->expectsOutputToContain('user:')
-            ->expectsOutputToContain('panel_user:')
+            ->expectsOutputToContain('user:')
             ->expectsOutputToContain('Full link management + dashboard access')
             ->assertExitCode(0);
     }

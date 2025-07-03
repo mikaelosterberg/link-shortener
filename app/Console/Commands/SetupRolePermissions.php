@@ -13,7 +13,7 @@ class SetupRolePermissions extends Command
      */
     protected $signature = 'roles:setup 
                             {--reset : Reset all role permissions before setting up defaults}
-                            {--role=* : Only setup specific roles (admin, user, panel_user)}';
+                            {--role=* : Only setup specific roles (admin, user)}';
 
     /**
      * The console command description.
@@ -36,7 +36,7 @@ class SetupRolePermissions extends Command
 
         $rolesToSetup = $this->option('role');
         if (empty($rolesToSetup)) {
-            $rolesToSetup = ['admin', 'user', 'panel_user'];
+            $rolesToSetup = ['admin', 'user'];
         }
 
         if ($this->option('reset')) {
@@ -171,13 +171,6 @@ class SetupRolePermissions extends Command
                 'page_UserProfile',
             ],
 
-            'panel_user' => [
-                // Minimal access - just view their own data
-                'view_link',
-                'view_link::group',
-                'page_UserProfile',
-            ],
-
             default => []
         };
     }
@@ -187,7 +180,7 @@ class SetupRolePermissions extends Command
      */
     private function displayRoleSummary(): void
     {
-        $roles = ['super_admin', 'admin', 'user', 'panel_user'];
+        $roles = ['super_admin', 'admin', 'user'];
 
         foreach ($roles as $roleName) {
             $role = Role::findByName($roleName);
@@ -201,7 +194,6 @@ class SetupRolePermissions extends Command
                 'super_admin' => 'Unrestricted access to everything (automatic)',
                 'admin' => 'Full link management + CSV import + dashboard access',
                 'user' => 'Basic link management + limited dashboard (no CSV import)',
-                'panel_user' => 'View-only access to own data',
                 default => 'Unknown role'
             };
 

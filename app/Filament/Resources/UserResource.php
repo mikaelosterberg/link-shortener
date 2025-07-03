@@ -129,7 +129,6 @@ class UserResource extends Resource
                         'super_admin' => 'danger',
                         'admin' => 'warning',
                         'user' => 'success',
-                        'panel_user' => 'info',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state))

@@ -19,7 +19,6 @@ class UserRoleManagementTest extends TestCase
         Role::create(['name' => 'super_admin']);
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'user']);
-        Role::create(['name' => 'panel_user']);
     }
 
     public function test_user_can_be_assigned_role_on_creation(): void
@@ -114,10 +113,10 @@ class UserRoleManagementTest extends TestCase
         $user = User::factory()->create();
 
         // User with no role should not have panel access
-        $this->assertFalse($user->hasRole(['super_admin', 'panel_user', 'admin', 'user']));
+        $this->assertFalse($user->hasRole(['super_admin', 'admin', 'user']));
 
         // User with proper role should have panel access
         $user->assignRole('user');
-        $this->assertTrue($user->hasRole(['super_admin', 'panel_user', 'admin', 'user']));
+        $this->assertTrue($user->hasRole(['super_admin', 'admin', 'user']));
     }
 }
