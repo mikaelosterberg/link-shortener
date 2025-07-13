@@ -106,6 +106,20 @@ body {
 /* Display utilities */
 .inline-flex { display: inline-flex; }
 
+/* Table sorting */
+.sortable-table th {
+    user-select: none;
+    transition: background-color 0.2s;
+}
+.sort-indicator {
+    opacity: 0.5;
+    font-size: 0.75rem;
+}
+.sortable-table th:hover .sort-indicator {
+    opacity: 1;
+}
+.cursor-pointer { cursor: pointer; }
+
 /* Buttons */
 .btn {
     display: inline-flex;

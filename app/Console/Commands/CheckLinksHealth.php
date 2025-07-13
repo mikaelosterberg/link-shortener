@@ -88,6 +88,9 @@ class CheckLinksHealth extends Command
         $this->line('');
         $this->line('Run the queue worker to process these jobs:');
         $this->line('php artisan queue:work --queue=health-checks');
+        $this->line('');
+        $this->line('After health checks complete, send notifications with:');
+        $this->line('php artisan notifications:send health');
 
         return Command::SUCCESS;
     }

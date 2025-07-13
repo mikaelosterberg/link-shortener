@@ -19,6 +19,7 @@ class ReportMetricsService
             'unique_clicks' => $this->getUniqueClicks($dateRange, $linkFilter, $config),
             'total_links' => $this->getTotalLinks($dateRange, $linkFilter, $config),
             'active_links' => $this->getActiveLinks($dateRange, $linkFilter, $config),
+            'links_created' => $this->getLinksCreated($dateRange, $linkFilter, $config),
             'clicks_over_time' => $this->getClicksOverTime($dateRange, $linkFilter, $config),
             'top_links' => $this->getTopLinks($dateRange, $linkFilter, $config),
             'clicks_by_country' => $this->getClicksByCountry($dateRange, $linkFilter, $config),
@@ -112,10 +113,13 @@ class ReportMetricsService
 
     private function getTotalLinks(array $dateRange, ?array $linkFilter, array $config): array
     {
-        $query = Link::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $query = Link::whereHas('clicks', function ($q) use ($dateRange) {
+            $q->whereBetween('clicked_at', [$dateRange['start'], $dateRange['end']]);
+        });
 
-        if ($linkFilter && isset($linkFilter['groupIds'])) {
-            $query->whereIn('group_id', $linkFilter['groupIds']);
+        // Apply link filtering if specified
+        if ($linkFilter && isset($linkFilter['link_ids'])) {
+            $query->whereIn('id', $linkFilter['link_ids']);
         }
 
         $current = $query->count();
@@ -133,10 +137,13 @@ class ReportMetricsService
             ->where(function ($q) {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
+            })
+            ->whereHas('clicks', function ($q) use ($dateRange) {
+                $q->whereBetween('clicked_at', [$dateRange['start'], $dateRange['end']]);
             });
 
-        if ($linkFilter && isset($linkFilter['groupIds'])) {
-            $query->whereIn('group_id', $linkFilter['groupIds']);
+        if ($linkFilter && isset($linkFilter['link_ids'])) {
+            $query->whereIn('id', $linkFilter['link_ids']);
         }
 
         $current = $query->count();
@@ -145,6 +152,24 @@ class ReportMetricsService
             'value' => $current,
             'formatted_value' => number_format($current),
             'label' => 'Active Links',
+        ];
+    }
+
+    private function getLinksCreated(array $dateRange, ?array $linkFilter, array $config): array
+    {
+        $query = Link::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+
+        // Apply link filtering if specified
+        if ($linkFilter && isset($linkFilter['link_ids'])) {
+            $query->whereIn('id', $linkFilter['link_ids']);
+        }
+
+        $current = $query->count();
+
+        return [
+            'value' => $current,
+            'formatted_value' => number_format($current),
+            'label' => 'Links Created',
         ];
     }
 
@@ -186,19 +211,77 @@ class ReportMetricsService
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
         }
 
-        $data = $query->get();
+        $data = $query->get()->keyBy('period');
+
+        // Generate complete period range
+        $completePeriods = $this->generatePeriodRange($dateRange['start'], $dateRange['end'], $period);
+
+        $labels = [];
+        $values = [];
+
+        foreach ($completePeriods as $periodKey => $periodLabel) {
+            $labels[] = $periodLabel;
+            $values[] = isset($data[$periodKey]) ? (int) $data[$periodKey]->clicks : 0;
+        }
 
         return [
-            'labels' => $data->pluck('period')->toArray(),
-            'data' => $data->pluck('clicks')->toArray(),
+            'labels' => $labels,
+            'data' => $values,
             'type' => 'line',
             'title' => 'Clicks Over Time',
         ];
     }
 
+    private function generatePeriodRange($startDate, $endDate, $period): array
+    {
+        $periods = [];
+        $current = $startDate->copy();
+
+        while ($current <= $endDate) {
+            switch ($period) {
+                case 'hourly':
+                    $key = $current->format('Y-m-d H:00:00');
+                    $label = $current->format('M j, H:00');
+                    $current->addHour();
+                    break;
+                case 'daily':
+                    $key = $current->format('Y-m-d');
+                    $label = $current->format('M j');
+                    $current->addDay();
+                    break;
+                case 'weekly':
+                    $key = $current->format('Y-W');
+                    $label = 'Week '.$current->format('W, Y');
+                    $current->addWeek();
+                    break;
+                case 'monthly':
+                    $key = $current->format('Y-m');
+                    $label = $current->format('M Y');
+                    $current->addMonth();
+                    break;
+                default:
+                    $key = $current->format('Y-m-d');
+                    $label = $current->format('M j');
+                    $current->addDay();
+                    break;
+            }
+
+            $periods[$key] = $label;
+
+            // Safety check to prevent infinite loops
+            if (count($periods) > 1000) {
+                break;
+            }
+        }
+
+        return $periods;
+    }
+
     private function getTopLinks(array $dateRange, ?array $linkFilter, array $config): array
     {
         $limit = $config['limit'] ?? 10;
+        $sortColumn = $config['sort_column'] ?? 'total_clicks';
+        $sortDirection = $config['sort_direction'] ?? 'desc';
 
         $query = DB::table('clicks')
             ->join('links', 'clicks.link_id', '=', 'links.id')
@@ -209,9 +292,18 @@ class ReportMetricsService
                 DB::raw('COUNT(DISTINCT clicks.ip_address) as unique_clicks')
             )
             ->whereBetween('clicks.clicked_at', [$dateRange['start'], $dateRange['end']])
-            ->groupBy('links.id', 'links.short_code', 'links.original_url')
-            ->orderBy('total_clicks', 'desc')
-            ->limit($limit);
+            ->groupBy('links.id', 'links.short_code', 'links.original_url');
+
+        // Apply sorting
+        if (in_array($sortColumn, ['total_clicks', 'unique_clicks'])) {
+            $query->orderBy($sortColumn, $sortDirection);
+        } elseif ($sortColumn === 'short_code') {
+            $query->orderBy('links.short_code', $sortDirection);
+        } else {
+            $query->orderBy('total_clicks', 'desc');
+        }
+
+        $query->limit($limit);
 
         if ($linkFilter) {
             $query = $this->applyLinkFilterToQuery($query, $linkFilter, 'links');
@@ -327,6 +419,8 @@ class ReportMetricsService
     private function getLinkPerformance(array $dateRange, ?array $linkFilter, array $config): array
     {
         $limit = $config['limit'] ?? 20;
+        $sortColumn = $config['sort_column'] ?? 'total_clicks';
+        $sortDirection = $config['sort_direction'] ?? 'desc';
 
         $query = DB::table('links')
             ->leftJoin('clicks', function ($join) use ($dateRange) {
@@ -343,17 +437,23 @@ class ReportMetricsService
                 DB::raw('COUNT(clicks.id) as total_clicks'),
                 DB::raw('COUNT(DISTINCT clicks.ip_address) as unique_clicks')
             )
-            ->groupBy('links.id', 'links.short_code', 'links.original_url', 'link_groups.name', 'links.is_active', 'links.created_at')
-            ->orderBy('total_clicks', 'desc')
-            ->limit($limit);
+            ->groupBy('links.id', 'links.short_code', 'links.original_url', 'link_groups.name', 'links.is_active', 'links.created_at');
 
-        if ($linkFilter) {
-            if (isset($linkFilter['linkIds'])) {
-                $query->whereIn('links.id', $linkFilter['linkIds']);
-            }
-            if (isset($linkFilter['groupIds'])) {
-                $query->whereIn('links.group_id', $linkFilter['groupIds']);
-            }
+        // Apply sorting
+        if ($sortColumn === 'group_name') {
+            $query->orderBy('link_groups.name', $sortDirection);
+        } elseif (in_array($sortColumn, ['total_clicks', 'unique_clicks'])) {
+            $query->orderBy($sortColumn, $sortDirection);
+        } elseif (in_array($sortColumn, ['short_code', 'created_at', 'is_active'])) {
+            $query->orderBy('links.'.$sortColumn, $sortDirection);
+        } else {
+            $query->orderBy('total_clicks', 'desc');
+        }
+
+        $query->limit($limit);
+
+        if ($linkFilter && isset($linkFilter['link_ids'])) {
+            $query->whereIn('links.id', $linkFilter['link_ids']);
         }
 
         $data = $query->get();
@@ -485,14 +585,8 @@ class ReportMetricsService
 
     private function applyLinkFilter($query, array $linkFilter)
     {
-        if (isset($linkFilter['linkIds'])) {
-            $query->whereIn('link_id', $linkFilter['linkIds']);
-        }
-
-        if (isset($linkFilter['groupIds'])) {
-            $query->whereHas('link', function ($q) use ($linkFilter) {
-                $q->whereIn('group_id', $linkFilter['groupIds']);
-            });
+        if (isset($linkFilter['link_ids'])) {
+            $query->whereIn('link_id', $linkFilter['link_ids']);
         }
 
         return $query;
@@ -500,15 +594,12 @@ class ReportMetricsService
 
     private function applyLinkFilterToQuery($query, array $linkFilter, string $tablePrefix = 'clicks')
     {
-        if (isset($linkFilter['linkIds'])) {
-            $query->whereIn($tablePrefix === 'clicks' ? 'link_id' : 'id', $linkFilter['linkIds']);
-        }
-
-        if (isset($linkFilter['groupIds']) && $tablePrefix !== 'clicks') {
-            $query->whereIn($tablePrefix.'.group_id', $linkFilter['groupIds']);
-        } elseif (isset($linkFilter['groupIds'])) {
-            $query->join('links as filter_links', 'clicks.link_id', '=', 'filter_links.id')
-                ->whereIn('filter_links.group_id', $linkFilter['groupIds']);
+        if (isset($linkFilter['link_ids'])) {
+            if ($tablePrefix === 'clicks') {
+                $query->whereIn('link_id', $linkFilter['link_ids']);
+            } else {
+                $query->whereIn($tablePrefix.'.id', $linkFilter['link_ids']);
+            }
         }
 
         return $query;

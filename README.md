@@ -88,6 +88,18 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **Detailed Diagnostics** - HTTP status codes, redirect chains, and error messages
 - **Queue-Based Processing** - Non-blocking health checks via job queue
 
+### 📧 Notification System
+- **Multi-Channel Notifications** - Email, Webhook, Slack, Discord, Microsoft Teams
+- **Notification Groups** - Create groups with multiple users and channels
+- **Configurable Health Reports** - Comprehensive email reports of all failed links (frequency based on your cron setup)
+- **System Alerts** - Manual alerts for operational issues with severity levels
+- **Maintenance Notifications** - Scheduled maintenance announcements with timing
+- **Professional Email Templates** - Clean templates with direct edit links for easy fixing
+- **Link-Specific Assignments** - Assign notification groups to individual links
+- **Batched Group Notifications** - Single email per group with all failed links
+- **Individual Owner Alerts** - Personal notifications for link creators
+- **Rich Platform Integration** - Formatted messages for Slack/Discord/Teams with embeds
+
 ### 🚀 Performance Optimization
 - **Redis-Based Click Tracking** - Zero database writes during high-traffic campaigns
 - **3 Tracking Methods** - Choose between `queue`, `redis`, or `none` based on needs
@@ -493,6 +505,51 @@ php artisan clicks:update-locations --all
 ```
 
 **Note:** This command automatically skips private/local IP addresses (like 127.0.0.1) that cannot be geolocated. The command requires the MaxMind GeoLite2 database to be installed.
+
+### Notification System
+
+The application includes a comprehensive notification system that monitors link health and sends multi-channel alerts.
+
+**Setting Up Notification Groups:**
+1. Login to admin panel at `/admin`
+2. Navigate to "Settings" → "Notifications"
+3. Click "Create Notification Group"
+4. Add users to the group and configure notification channels:
+   - **Email** - User email addresses (automatic from group members)
+   - **Webhook** - Custom HTTP endpoints with configurable headers
+   - **Slack** - Webhook URLs with optional channel targeting
+   - **Discord** - Webhook URLs with rich embed formatting
+   - **Microsoft Teams** - Webhook URLs with card formatting
+
+**Automated Health Notifications:**
+```bash
+# Health notifications (configure frequency as needed)
+0 9 * * * cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1   # Daily at 9 AM
+0 */6 * * * cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1  # Every 6 hours
+0 9 * * MON cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1  # Weekly on Monday
+
+# Health checks every 30 minutes
+*/30 * * * * cd /path/to/project && php artisan links:check-health >/dev/null 2>&1
+```
+
+**Manual System Notifications:**
+```bash
+# System alerts (when issues occur)
+php artisan notifications:send system --message="Database connection lost" --severity=high
+
+# Maintenance notifications (before maintenance)
+php artisan notifications:send maintenance --message="Maintenance in 1 hour" --schedule="2024-01-15 02:00:00"
+
+# Test notifications
+php artisan notifications:test system-alert
+php artisan notifications:test maintenance
+```
+
+**Link-Specific Notifications:**
+- Edit any link in the admin panel
+- Go to "Notification Settings" tab
+- Assign notification groups to receive alerts for that specific link
+- Groups receive batched reports of all failed links based on your cron schedule
 
 ### Role Permission Management
 

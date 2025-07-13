@@ -472,6 +472,7 @@ class LinkResource extends Resource
             RelationManagers\ClicksRelationManager::class,
             RelationManagers\GeoRulesRelationManager::class,
             RelationManagers\AbTestRelationManager::class,
+            RelationManagers\NotificationsRelationManager::class,
         ];
     }
 

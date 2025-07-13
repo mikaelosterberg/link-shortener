@@ -75,4 +75,22 @@ class User extends Authenticatable implements FilamentUser
     {
         return new \DateTimeZone($this->timezone ?? 'UTC');
     }
+
+    /**
+     * Notification groups this user belongs to
+     */
+    public function notificationGroups(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(NotificationGroup::class)
+            ->withPivot(['is_active'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Active notification groups for this user
+     */
+    public function activeNotificationGroups(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->notificationGroups()->wherePivot('is_active', true);
+    }
 }

@@ -69,6 +69,16 @@ class Link extends Model
         return $this->hasOne(AbTest::class);
     }
 
+    public function linkNotifications(): HasMany
+    {
+        return $this->hasMany(LinkNotification::class);
+    }
+
+    public function activeNotifications(): HasMany
+    {
+        return $this->linkNotifications()->where('is_active', true);
+    }
+
     public function isExpired(): bool
     {
         return $this->expires_at && $this->expires_at->isPast();

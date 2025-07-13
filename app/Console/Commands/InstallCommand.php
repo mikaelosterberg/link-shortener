@@ -49,7 +49,10 @@ class InstallCommand extends Command
         // Step 8: Fix navigation grouping
         $this->fixNavigationGrouping();
 
-        // Step 9: Verify Shield routes
+        // Step 9: Seed notification types
+        $this->seedNotificationTypes();
+
+        // Step 10: Verify Shield routes
         $this->verifyShieldRoutes();
 
         // Step 10: Final navigation fix (after Shield install)
@@ -471,5 +474,17 @@ class InstallCommand extends Command
         $roleCount = Role::count();
         $permissionCount = Permission::count();
         $this->line("<fg=green>✅ Installation complete: {$roleCount} roles, {$permissionCount} permissions configured</>");
+    }
+
+    private function seedNotificationTypes(): void
+    {
+        $this->info('📧 Setting up notification types...');
+
+        $this->callSilent('db:seed', [
+            'class' => 'NotificationTypesSeeder',
+        ]);
+
+        $this->line('  ✅ Notification types created (link_health, system_alert, maintenance)');
+        $this->newLine();
     }
 }

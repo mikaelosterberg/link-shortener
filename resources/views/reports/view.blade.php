@@ -78,9 +78,6 @@
                     @if(isset($reportData['containers']) && count($reportData['containers']) > 0)
                         @foreach($reportData['containers'] as $container)
                             <div class="container bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-                                <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
-                                    <h2 class="text-lg font-medium text-gray-900">{{ $container['name'] }}</h2>
-                                </div>
                                 <div class="p-6">
                                     <div class="components-grid" style="
                                         display: flex;
@@ -94,7 +91,7 @@
                                         @foreach($container['components'] as $component)
                                             <div class="component bg-gray-50 rounded-lg p-4" style="
                                                 flex-basis: {{ $component['flex_basis'] ?? 'auto' }};
-                                                flex-grow: {{ $component['flex_grow'] ?? 1 }};
+                                                flex-grow: {{ $container['justify_content'] === 'center' && count($container['components']) > 1 ? '0' : ($component['flex_grow'] ?? 1) }};
                                                 flex-shrink: {{ $component['flex_shrink'] ?? 1 }};
                                             " data-component-id="{{ $component['id'] }}" data-component-type="{{ $component['type'] }}">
                                                 <div class="mb-3">
@@ -145,12 +142,16 @@
                                         </div>
                                     @elseif($component['type'] === 'data_table')
                                         <div class="overflow-x-auto">
-                                            <table class="min-w-full divide-y divide-gray-200">
+                                            <table class="min-w-full divide-y divide-gray-200 sortable-table" data-component-id="{{ $component['id'] }}">
                                                 <thead class="bg-gray-50">
                                                     <tr>
                                                         @if(isset($component['data']['columns']))
-                                                            @foreach($component['data']['columns'] as $column)
-                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $column }}</th>
+                                                            @foreach($component['data']['columns'] as $index => $column)
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" 
+                                                                    onclick="sortTable('{{ $component['id'] }}', {{ $index }})">
+                                                                    {{ $column }}
+                                                                    <span class="sort-indicator ml-1">⇅</span>
+                                                                </th>
                                                             @endforeach
                                                         @endif
                                                     </tr>
@@ -182,8 +183,13 @@
                                             <canvas id="chart-{{ $component['id'] }}" class="w-full h-full"></canvas>
                                         </div>
                                     @elseif($component['type'] === 'text_block')
-                                        <div class="text-block" style="text-align: {{ $component['config']['alignment'] ?? 'left' }}">
-                                            {!! nl2br(e($component['data']['content'] ?? $component['config']['content'] ?? '')) !!}
+                                        @php
+                                            $textType = $component['config']['text_type'] ?? 'p';
+                                            $content = nl2br(e($component['data']['content'] ?? $component['config']['content'] ?? ''));
+                                            $alignment = $component['config']['alignment'] ?? 'left';
+                                        @endphp
+                                        <div class="text-block" style="text-align: {{ $alignment }}">
+                                            <{{ $textType }}>{!! $content !!}</{{ $textType }}>
                                         </div>
                                     @else
                                         <div class="text-center py-8 text-gray-500">
@@ -215,6 +221,53 @@
                 window.location.reload();
             });
         });
+
+        function sortTable(componentId, columnIndex) {
+            const table = document.querySelector(`[data-component-id="${componentId}"] tbody`);
+            if (!table) return;
+
+            const rows = Array.from(table.querySelectorAll('tr'));
+            const isNumericColumn = columnIndex === 2 || columnIndex === 3; // Total Clicks, Unique Clicks
+            
+            // Determine current sort direction
+            const header = document.querySelector(`[data-component-id="${componentId}"] thead th:nth-child(${columnIndex + 1})`);
+            const currentDirection = header.dataset.sortDirection || 'asc';
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            
+            // Update all headers to reset sort indicators
+            document.querySelectorAll(`[data-component-id="${componentId}"] thead th`).forEach(th => {
+                th.dataset.sortDirection = '';
+                th.querySelector('.sort-indicator').textContent = '⇅';
+            });
+            
+            // Update current header
+            header.dataset.sortDirection = newDirection;
+            header.querySelector('.sort-indicator').textContent = newDirection === 'asc' ? '↑' : '↓';
+
+            // Sort rows
+            rows.sort((a, b) => {
+                const aCell = a.children[columnIndex];
+                const bCell = b.children[columnIndex];
+                
+                let aValue = aCell.textContent.trim();
+                let bValue = bCell.textContent.trim();
+                
+                if (isNumericColumn) {
+                    aValue = parseInt(aValue.replace(/[^0-9]/g, '')) || 0;
+                    bValue = parseInt(bValue.replace(/[^0-9]/g, '')) || 0;
+                    return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+                } else {
+                    if (newDirection === 'asc') {
+                        return aValue.localeCompare(bValue);
+                    } else {
+                        return bValue.localeCompare(aValue);
+                    }
+                }
+            });
+
+            // Re-append sorted rows
+            rows.forEach(row => table.appendChild(row));
+        }
 
         function renderCharts() {
             @if(isset($reportData['containers']) && count($reportData['containers']) > 0)

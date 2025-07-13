@@ -12,7 +12,18 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header { background: white; padding: 16px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .sidebar { width: 300px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .sidebar { 
+            width: 300px; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
         .canvas { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-left: 20px; }
         .flex { display: flex; }
         .component-item { 
@@ -400,6 +411,7 @@
                                 <option value="unique_clicks">Unique Visitors</option>
                                 <option value="total_links">Total Links</option>
                                 <option value="active_links">Active Links</option>
+                                <option value="links_created">Links Created</option>
                             </select>
                         </div>
                         <div>
@@ -467,7 +479,23 @@
                             <select id="comp-metric" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
                                 <option value="link_performance">Link Performance</option>
                                 <option value="top_links">Top Links</option>
-                                <option value="clicks_by_country">Geographic Data</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Default Sort Column:</label>
+                            <select id="comp-sort-column" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="total_clicks">Total Clicks</option>
+                                <option value="unique_clicks">Unique Clicks</option>
+                                <option value="short_code">Link</option>
+                                <option value="group_name">Group</option>
+                                <option value="created_at">Created Date</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Sort Direction:</label>
+                            <select id="comp-sort-direction" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="desc">Descending (High to Low)</option>
+                                <option value="asc">Ascending (Low to High)</option>
                             </select>
                         </div>
                         <div>
@@ -484,6 +512,18 @@
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; margin-bottom: 4px; font-weight: 500;">Content:</label>
                             <textarea id="comp-content" rows="4" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="Enter your text content..."></textarea>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Text Type:</label>
+                            <select id="comp-text-type" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="p">Paragraph (p)</option>
+                                <option value="h1">Heading 1 (h1)</option>
+                                <option value="h2">Heading 2 (h2)</option>
+                                <option value="h3">Heading 3 (h3)</option>
+                                <option value="h4">Heading 4 (h4)</option>
+                                <option value="h5">Heading 5 (h5)</option>
+                                <option value="h6">Heading 6 (h6)</option>
+                            </select>
                         </div>
                         <div>
                             <label style="display: block; margin-bottom: 4px; font-weight: 500;">Text Alignment:</label>
@@ -517,7 +557,10 @@
                     period: document.getElementById('comp-period')?.value || 'daily',
                     limit: document.getElementById('comp-limit')?.value || 10,
                     content: document.getElementById('comp-content')?.value || '',
+                    text_type: document.getElementById('comp-text-type')?.value || 'p',
                     alignment: document.getElementById('comp-alignment')?.value || 'left',
+                    sort_column: document.getElementById('comp-sort-column')?.value || 'total_clicks',
+                    sort_direction: document.getElementById('comp-sort-direction')?.value || 'desc',
                     show_comparison: document.getElementById('comp-comparison')?.checked || false
                 },
                 flex_basis: 'auto',
@@ -966,8 +1009,21 @@
         }
 
         function editComponent(id) {
-            const comp = components.find(c => c.id === id);
-            if (!comp) return;
+            // First try to find in standalone components
+            let comp = components.find(c => c.id === id);
+            
+            // If not found, search in container components
+            if (!comp) {
+                for (const container of containers) {
+                    comp = container.components.find(c => c.id === id);
+                    if (comp) break;
+                }
+            }
+            
+            if (!comp) {
+                console.error('Component not found:', id);
+                return;
+            }
             
             // Store the component being edited
             window.editingComponent = comp;
@@ -1040,6 +1096,86 @@
                             </label>
                         </div>
                     `;
+                case 'line_chart':
+                case 'bar_chart':
+                    return `
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Title:</label>
+                            <input type="text" id="comp-title" value="${comp.title}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Metric:</label>
+                            <select id="comp-metric" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="clicks_over_time" ${comp.config.metric === 'clicks_over_time' ? 'selected' : ''}>Clicks Over Time</option>
+                                <option value="clicks_by_country" ${comp.config.metric === 'clicks_by_country' ? 'selected' : ''}>Clicks by Country</option>
+                                <option value="browser_stats" ${comp.config.metric === 'browser_stats' ? 'selected' : ''}>Browser Statistics</option>
+                                <option value="utm_campaigns" ${comp.config.metric === 'utm_campaigns' ? 'selected' : ''}>UTM Campaigns</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Time Period:</label>
+                            <select id="comp-period" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="hourly" ${comp.config.period === 'hourly' ? 'selected' : ''}>Hourly</option>
+                                <option value="daily" ${comp.config.period === 'daily' ? 'selected' : ''}>Daily</option>
+                                <option value="weekly" ${comp.config.period === 'weekly' ? 'selected' : ''}>Weekly</option>
+                                <option value="monthly" ${comp.config.period === 'monthly' ? 'selected' : ''}>Monthly</option>
+                            </select>
+                        </div>
+                    `;
+                case 'pie_chart':
+                    return `
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Title:</label>
+                            <input type="text" id="comp-title" value="${comp.title}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Metric:</label>
+                            <select id="comp-metric" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="traffic_sources" ${comp.config.metric === 'traffic_sources' ? 'selected' : ''}>Traffic Sources</option>
+                                <option value="clicks_by_device" ${comp.config.metric === 'clicks_by_device' ? 'selected' : ''}>Clicks by Device</option>
+                                <option value="clicks_by_country" ${comp.config.metric === 'clicks_by_country' ? 'selected' : ''}>Clicks by Country</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Items Limit:</label>
+                            <input type="number" id="comp-limit" value="${comp.config.limit || 5}" min="3" max="20" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                    `;
+                case 'data_table':
+                    return `
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Title:</label>
+                            <input type="text" id="comp-title" value="${comp.title}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Metric:</label>
+                            <select id="comp-metric" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="link_performance" ${comp.config.metric === 'link_performance' ? 'selected' : ''}>Link Performance</option>
+                                <option value="top_links" ${comp.config.metric === 'top_links' ? 'selected' : ''}>Top Links</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Default Sort Column:</label>
+                            <select id="comp-sort-column" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="total_clicks" ${comp.config.sort_column === 'total_clicks' ? 'selected' : ''}>Total Clicks</option>
+                                <option value="unique_clicks" ${comp.config.sort_column === 'unique_clicks' ? 'selected' : ''}>Unique Clicks</option>
+                                <option value="short_code" ${comp.config.sort_column === 'short_code' ? 'selected' : ''}>Link</option>
+                                <option value="group_name" ${comp.config.sort_column === 'group_name' ? 'selected' : ''}>Group</option>
+                                <option value="created_at" ${comp.config.sort_column === 'created_at' ? 'selected' : ''}>Created Date</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Sort Direction:</label>
+                            <select id="comp-sort-direction" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="desc" ${comp.config.sort_direction === 'desc' ? 'selected' : ''}>Descending (High to Low)</option>
+                                <option value="asc" ${comp.config.sort_direction === 'asc' ? 'selected' : ''}>Ascending (Low to High)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Rows Limit:</label>
+                            <input type="number" id="comp-limit" value="${comp.config.limit || 20}" min="5" max="100" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                    `;
                 case 'text_block':
                     return `
                         <div style="margin-bottom: 12px;">
@@ -1049,6 +1185,18 @@
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; margin-bottom: 4px; font-weight: 500;">Content:</label>
                             <textarea id="comp-content" rows="4" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">${comp.config.content || ''}</textarea>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Text Type:</label>
+                            <select id="comp-text-type" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <option value="p" ${(comp.config.text_type || 'p') === 'p' ? 'selected' : ''}>Paragraph (p)</option>
+                                <option value="h1" ${comp.config.text_type === 'h1' ? 'selected' : ''}>Heading 1 (h1)</option>
+                                <option value="h2" ${comp.config.text_type === 'h2' ? 'selected' : ''}>Heading 2 (h2)</option>
+                                <option value="h3" ${comp.config.text_type === 'h3' ? 'selected' : ''}>Heading 3 (h3)</option>
+                                <option value="h4" ${comp.config.text_type === 'h4' ? 'selected' : ''}>Heading 4 (h4)</option>
+                                <option value="h5" ${comp.config.text_type === 'h5' ? 'selected' : ''}>Heading 5 (h5)</option>
+                                <option value="h6" ${comp.config.text_type === 'h6' ? 'selected' : ''}>Heading 6 (h6)</option>
+                            </select>
                         </div>
                         <div>
                             <label style="display: block; margin-bottom: 4px; font-weight: 500;">Text Alignment:</label>
@@ -1081,19 +1229,55 @@
                 comp.config.show_comparison = document.getElementById('comp-comparison')?.checked || false;
             } else if (comp.type === 'text_block') {
                 comp.config.content = document.getElementById('comp-content')?.value || comp.config.content;
+                comp.config.text_type = document.getElementById('comp-text-type')?.value || comp.config.text_type;
                 comp.config.alignment = document.getElementById('comp-alignment')?.value || comp.config.alignment;
+            } else if (['line_chart', 'bar_chart', 'pie_chart'].includes(comp.type)) {
+                comp.config.metric = document.getElementById('comp-metric')?.value || comp.config.metric;
+                if (document.getElementById('comp-period')) {
+                    comp.config.period = document.getElementById('comp-period')?.value || comp.config.period;
+                }
+                if (document.getElementById('comp-limit')) {
+                    comp.config.limit = parseInt(document.getElementById('comp-limit')?.value) || comp.config.limit;
+                }
+            } else if (comp.type === 'data_table') {
+                comp.config.metric = document.getElementById('comp-metric')?.value || comp.config.metric;
+                comp.config.limit = parseInt(document.getElementById('comp-limit')?.value) || comp.config.limit;
+                comp.config.sort_column = document.getElementById('comp-sort-column')?.value || comp.config.sort_column;
+                comp.config.sort_direction = document.getElementById('comp-sort-direction')?.value || comp.config.sort_direction;
             }
             
-            renderComponents();
+            // Re-render the appropriate view
+            if (containers.length > 0) {
+                renderContainers();
+            } else {
+                renderComponents();
+            }
+            
             closeModal();
             window.editingComponent = null;
             console.log('Updated component:', comp);
         }
 
         function removeComponent(id) {
+            // First try to remove from standalone components
+            const originalLength = components.length;
             components = components.filter(c => c.id !== id);
-            renderComponents();
-            console.log('Removed component:', id);
+            
+            // If no component was removed from standalone, try containers
+            if (components.length === originalLength) {
+                for (let container of containers) {
+                    const index = container.components.findIndex(c => c.id === id);
+                    if (index !== -1) {
+                        container.components.splice(index, 1);
+                        renderContainers();
+                        console.log('Removed component from container:', id);
+                        return;
+                    }
+                }
+            } else {
+                renderComponents();
+                console.log('Removed standalone component:', id);
+            }
         }
 
         function addContainer(layoutType = 'default') {
@@ -1220,7 +1404,7 @@
                                     <div>Drag components here from the library above</div>
                                     <div style="font-size: 12px; margin-top: 4px; color: #9ca3af;">or from other containers</div>
                                 </div>
-                            ` : cont.components.map(comp => renderComponentInContainer(comp)).join('')}
+                            ` : cont.components.map(comp => renderComponentInContainer(comp, cont)).join('')}
                         </div>
                     </div>
                 `).join('');
@@ -1246,10 +1430,10 @@
             `;
         }
 
-        function renderComponentInContainer(comp) {
+        function renderComponentInContainer(comp, container) {
             return `
                 <div class="component-in-container" data-component-id="${comp.id}" style="
-                    ${comp.flex_basis ? `flex-basis: ${comp.flex_basis}; flex-grow: ${comp.flex_grow}; flex-shrink: ${comp.flex_shrink};` : 'flex: 1;'}
+                    ${comp.flex_basis ? `flex-basis: ${comp.flex_basis}; flex-grow: ${container.layout.justify_content === 'center' && container.components.length > 1 ? '0' : comp.flex_grow}; flex-shrink: ${comp.flex_shrink};` : 'flex: 1;'}
                 ">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                         <div style="display: flex; align-items: center; gap: 6px; flex: 1;">

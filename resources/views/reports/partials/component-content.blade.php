@@ -28,13 +28,15 @@
 @elseif($component['type'] === 'data_table')
     <div class="table-container overflow-x-auto">
         @if(isset($component['data']['data']) && count($component['data']['data']) > 0)
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 sortable-table" data-component-id="{{ $component['id'] }}">
                 <thead class="bg-gray-50">
                     <tr>
                         @if(isset($component['data']['columns']))
-                            @foreach($component['data']['columns'] as $column)
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            @foreach($component['data']['columns'] as $index => $column)
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" 
+                                    onclick="sortTable('{{ $component['id'] }}', {{ $index }})">
                                     {{ $column }}
+                                    <span class="sort-indicator ml-1">⇅</span>
                                 </th>
                             @endforeach
                         @else
@@ -44,21 +46,39 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($component['data']['data'] as $row)
-                        <tr>
-                            @if(is_array($row))
-                                @foreach($row as $cell)
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $cell }}
+                    @if(isset($component['data']['data']) && is_array($component['data']['data']))
+                        @foreach($component['data']['data'] as $row)
+                            <tr>
+                                @if(is_array($row) && isset($row['short_code']))
+                                    {{-- Link performance table format --}}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $row['short_code'] ?? '' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $row['group_name'] ?? '' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $row['total_clicks'] ?? '' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $row['unique_clicks'] ?? '' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if(($row['is_active'] ?? '') === 'Active')
+                                            <span class="status-badge bg-green-100 text-green-800">Active</span>
+                                        @else
+                                            <span class="status-badge bg-red-100 text-red-800">Inactive</span>
+                                        @endif
                                     </td>
-                                @endforeach
-                            @else
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" colspan="2">
-                                    {{ $row }}
-                                </td>
-                            @endif
-                        </tr>
-                    @endforeach
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $row['created_at'] ?? '' }}</td>
+                                @elseif(is_array($row))
+                                    {{-- Generic array format --}}
+                                    @foreach($row as $cell)
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $cell }}
+                                        </td>
+                                    @endforeach
+                                @else
+                                    {{-- Single value format --}}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" colspan="2">
+                                        {{ $row }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    @endif
                 </tbody>
             </table>
         @else
@@ -66,8 +86,13 @@
         @endif
     </div>
 @elseif($component['type'] === 'text_block')
-    <div class="text-block prose max-w-none">
-        {{ $component['config']['content'] ?? 'No content available' }}
+    @php
+        $textType = $component['config']['text_type'] ?? 'p';
+        $content = nl2br(e($component['data']['content'] ?? $component['config']['content'] ?? 'No content available'));
+        $alignment = $component['config']['alignment'] ?? 'left';
+    @endphp
+    <div class="text-block prose max-w-none" style="text-align: {{ $alignment }}">
+        <{{ $textType }}>{!! $content !!}</{{ $textType }}>
     </div>
 @else
     <div class="text-center py-8 text-gray-500">
