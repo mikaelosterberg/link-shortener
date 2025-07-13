@@ -13,21 +13,22 @@ class ReportMetricsService
     {
         $dateRange = $this->getDateRange($globalFilters);
         $linkFilter = $this->getLinkFilter($globalFilters);
+        $botExclusion = $this->getBotExclusion($globalFilters);
 
         return match ($metric) {
-            'total_clicks' => $this->getTotalClicks($dateRange, $linkFilter, $config),
-            'unique_clicks' => $this->getUniqueClicks($dateRange, $linkFilter, $config),
+            'total_clicks' => $this->getTotalClicks($dateRange, $linkFilter, $config, $botExclusion),
+            'unique_clicks' => $this->getUniqueClicks($dateRange, $linkFilter, $config, $botExclusion),
             'total_links' => $this->getTotalLinks($dateRange, $linkFilter, $config),
             'active_links' => $this->getActiveLinks($dateRange, $linkFilter, $config),
             'links_created' => $this->getLinksCreated($dateRange, $linkFilter, $config),
-            'clicks_over_time' => $this->getClicksOverTime($dateRange, $linkFilter, $config),
-            'top_links' => $this->getTopLinks($dateRange, $linkFilter, $config),
-            'clicks_by_country' => $this->getClicksByCountry($dateRange, $linkFilter, $config),
-            'clicks_by_device' => $this->getClicksByDevice($dateRange, $linkFilter, $config),
-            'traffic_sources' => $this->getTrafficSources($dateRange, $linkFilter, $config),
-            'link_performance' => $this->getLinkPerformance($dateRange, $linkFilter, $config),
-            'browser_stats' => $this->getBrowserStats($dateRange, $linkFilter, $config),
-            'utm_campaigns' => $this->getUtmCampaigns($dateRange, $linkFilter, $config),
+            'clicks_over_time' => $this->getClicksOverTime($dateRange, $linkFilter, $config, $botExclusion),
+            'top_links' => $this->getTopLinks($dateRange, $linkFilter, $config, $botExclusion),
+            'clicks_by_country' => $this->getClicksByCountry($dateRange, $linkFilter, $config, $botExclusion),
+            'clicks_by_device' => $this->getClicksByDevice($dateRange, $linkFilter, $config, $botExclusion),
+            'traffic_sources' => $this->getTrafficSources($dateRange, $linkFilter, $config, $botExclusion),
+            'link_performance' => $this->getLinkPerformance($dateRange, $linkFilter, $config, $botExclusion),
+            'browser_stats' => $this->getBrowserStats($dateRange, $linkFilter, $config, $botExclusion),
+            'utm_campaigns' => $this->getUtmCampaigns($dateRange, $linkFilter, $config, $botExclusion),
             default => ['error' => "Unknown metric: {$metric}"],
         };
     }
@@ -64,12 +65,30 @@ class ReportMetricsService
         return ['link_ids' => $linkIds];
     }
 
-    private function getTotalClicks(array $dateRange, ?array $linkFilter, array $config): array
+    private function getBotExclusion(array $filters): ?array
+    {
+        if (! ($filters['exclude_bots'] ?? false)) {
+            return null;
+        }
+
+        $exclusions = $filters['bot_exclusions'] ?? [];
+        if (empty($exclusions)) {
+            return null;
+        }
+
+        return ['exclusions' => $exclusions];
+    }
+
+    private function getTotalClicks(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $query = Click::whereBetween('clicked_at', [$dateRange['start'], $dateRange['end']]);
 
         if ($linkFilter) {
             $query = $this->applyLinkFilter($query, $linkFilter);
+        }
+
+        if ($botExclusion) {
+            $query = $this->applyBotExclusion($query, $botExclusion);
         }
 
         $current = $query->count();
@@ -87,13 +106,17 @@ class ReportMetricsService
         ];
     }
 
-    private function getUniqueClicks(array $dateRange, ?array $linkFilter, array $config): array
+    private function getUniqueClicks(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $query = Click::whereBetween('clicked_at', [$dateRange['start'], $dateRange['end']])
             ->distinct('ip_address');
 
         if ($linkFilter) {
             $query = $this->applyLinkFilter($query, $linkFilter);
+        }
+
+        if ($botExclusion) {
+            $query = $this->applyBotExclusion($query, $botExclusion);
         }
 
         $current = $query->count('ip_address');
@@ -173,7 +196,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getClicksOverTime(array $dateRange, ?array $linkFilter, array $config): array
+    private function getClicksOverTime(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $period = $config['period'] ?? 'daily';
 
@@ -209,6 +232,10 @@ class ReportMetricsService
 
         if ($linkFilter) {
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
+        }
+
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
         }
 
         $data = $query->get()->keyBy('period');
@@ -277,7 +304,7 @@ class ReportMetricsService
         return $periods;
     }
 
-    private function getTopLinks(array $dateRange, ?array $linkFilter, array $config): array
+    private function getTopLinks(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $limit = $config['limit'] ?? 10;
         $sortColumn = $config['sort_column'] ?? 'total_clicks';
@@ -309,6 +336,10 @@ class ReportMetricsService
             $query = $this->applyLinkFilterToQuery($query, $linkFilter, 'links');
         }
 
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
+        }
+
         $data = $query->get();
 
         return [
@@ -325,7 +356,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getClicksByCountry(array $dateRange, ?array $linkFilter, array $config): array
+    private function getClicksByCountry(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $limit = $config['limit'] ?? 10;
 
@@ -341,6 +372,10 @@ class ReportMetricsService
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
         }
 
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
+        }
+
         $data = $query->get();
 
         return [
@@ -351,7 +386,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getClicksByDevice(array $dateRange, ?array $linkFilter, array $config): array
+    private function getClicksByDevice(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $query = DB::table('clicks')
             ->select(
@@ -369,6 +404,10 @@ class ReportMetricsService
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
         }
 
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
+        }
+
         $data = $query->get();
 
         return [
@@ -379,7 +418,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getTrafficSources(array $dateRange, ?array $linkFilter, array $config): array
+    private function getTrafficSources(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $limit = $config['limit'] ?? 8;
 
@@ -406,6 +445,10 @@ class ReportMetricsService
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
         }
 
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
+        }
+
         $data = $query->get();
 
         return [
@@ -416,7 +459,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getLinkPerformance(array $dateRange, ?array $linkFilter, array $config): array
+    private function getLinkPerformance(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $limit = $config['limit'] ?? 20;
         $sortColumn = $config['sort_column'] ?? 'total_clicks';
@@ -476,7 +519,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getBrowserStats(array $dateRange, ?array $linkFilter, array $config): array
+    private function getBrowserStats(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $limit = $config['limit'] ?? 8;
 
@@ -501,6 +544,10 @@ class ReportMetricsService
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
         }
 
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
+        }
+
         $data = $query->get();
 
         return [
@@ -511,7 +558,7 @@ class ReportMetricsService
         ];
     }
 
-    private function getUtmCampaigns(array $dateRange, ?array $linkFilter, array $config): array
+    private function getUtmCampaigns(array $dateRange, ?array $linkFilter, array $config, ?array $botExclusion = null): array
     {
         $limit = $config['limit'] ?? 10;
 
@@ -526,6 +573,10 @@ class ReportMetricsService
 
         if ($linkFilter) {
             $query = $this->applyLinkFilterToQuery($query, $linkFilter);
+        }
+
+        if ($botExclusion) {
+            $query = $this->applyBotExclusionToQuery($query, $botExclusion);
         }
 
         $data = $query->get();
@@ -592,6 +643,29 @@ class ReportMetricsService
         return $query;
     }
 
+    private function applyBotExclusion($query, array $botExclusion)
+    {
+        if (! isset($botExclusion['exclusions']) || empty($botExclusion['exclusions'])) {
+            return $query;
+        }
+
+        foreach ($botExclusion['exclusions'] as $exclusion) {
+            if (! isset($exclusion['sent_at']) || ! isset($exclusion['exclude_minutes'])) {
+                continue;
+            }
+
+            $sentAt = Carbon::parse($exclusion['sent_at']);
+            $excludeUntil = $sentAt->copy()->addMinutes($exclusion['exclude_minutes']);
+
+            $query->where(function ($q) use ($sentAt, $excludeUntil) {
+                $q->where('clicked_at', '<', $sentAt)
+                    ->orWhere('clicked_at', '>', $excludeUntil);
+            });
+        }
+
+        return $query;
+    }
+
     private function applyLinkFilterToQuery($query, array $linkFilter, string $tablePrefix = 'clicks')
     {
         if (isset($linkFilter['link_ids'])) {
@@ -600,6 +674,29 @@ class ReportMetricsService
             } else {
                 $query->whereIn($tablePrefix.'.id', $linkFilter['link_ids']);
             }
+        }
+
+        return $query;
+    }
+
+    private function applyBotExclusionToQuery($query, array $botExclusion)
+    {
+        if (! isset($botExclusion['exclusions']) || empty($botExclusion['exclusions'])) {
+            return $query;
+        }
+
+        foreach ($botExclusion['exclusions'] as $exclusion) {
+            if (! isset($exclusion['sent_at']) || ! isset($exclusion['exclude_minutes'])) {
+                continue;
+            }
+
+            $sentAt = Carbon::parse($exclusion['sent_at']);
+            $excludeUntil = $sentAt->copy()->addMinutes($exclusion['exclude_minutes']);
+
+            $query->where(function ($q) use ($sentAt, $excludeUntil) {
+                $q->where('clicked_at', '<', $sentAt)
+                    ->orWhere('clicked_at', '>', $excludeUntil);
+            });
         }
 
         return $query;

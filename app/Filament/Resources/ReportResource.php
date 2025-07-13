@@ -31,17 +31,21 @@ class ReportResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->rows(3)
                     ->columnSpanFull(),
-                Forms\Components\Select::make('visibility')
-                    ->options([
-                        'private' => 'Private (Only Me)',
-                        'team' => 'Team (Admins)',
-                        'public' => 'Public (Everyone)',
-                    ])
-                    ->default('private')
-                    ->required(),
-                Forms\Components\Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        Forms\Components\Select::make('visibility')
+                            ->options([
+                                'private' => 'Private (Only Me)',
+                                'team' => 'Team (Admins)',
+                                'public' => 'Public (Everyone)',
+                            ])
+                            ->default('private')
+                            ->required(),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true)
+                            ->inline(false),
+                    ]),
 
                 Forms\Components\Section::make('Date Range')
                     ->schema([
@@ -119,6 +123,35 @@ class ReportResource extends Resource
                             ->searchable()
                             ->visible(fn (Forms\Get $get): bool => $get('global_filters.link_filter_type') === 'specific_links')
                             ->helperText('Select specific links to include in this report'),
+
+                        Forms\Components\Toggle::make('global_filters.exclude_bots')
+                            ->label('Exclude Likely Email Scanner Bots')
+                            ->helperText('Exclude clicks that appear to be from email security scanners')
+                            ->live(),
+
+                        Forms\Components\Repeater::make('global_filters.bot_exclusions')
+                            ->label('Email Campaign Exclusion Periods')
+                            ->schema([
+                                Forms\Components\DateTimePicker::make('sent_at')
+                                    ->label('Email Sent At')
+                                    ->required()
+                                    ->seconds(false),
+                                Forms\Components\TextInput::make('exclude_minutes')
+                                    ->label('Exclude for (minutes)')
+                                    ->numeric()
+                                    ->default(5)
+                                    ->minValue(1)
+                                    ->maxValue(60)
+                                    ->required(),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Campaign Description (optional)')
+                                    ->placeholder('e.g., Newsletter blast, Product announcement'),
+                            ])
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->addActionLabel('Add Email Campaign')
+                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.exclude_bots'))
+                            ->helperText('Add time periods when you sent bulk emails to exclude scanner clicks'),
                     ])
                     ->collapsible(),
 

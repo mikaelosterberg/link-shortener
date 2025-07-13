@@ -6,7 +6,7 @@ return [
         'slug' => 'shield/roles',
         'navigation_sort' => -1,
         'navigation_badge' => true,
-        'navigation_group' => 'Settings',
+        'navigation_group' => true,
         'sub_navigation_position' => null,
         'is_globally_searchable' => false,
         'show_model_path' => true,
@@ -25,6 +25,11 @@ return [
         'name' => 'super_admin',
         'define_via_gate' => false,
         'intercept_gate' => 'before', // after
+    ],
+
+    'panel_user' => [
+        'enabled' => true,
+        'name' => 'panel_user',
     ],
 
     'permission_prefixes' => [
@@ -65,7 +70,6 @@ return [
 
         'pages' => [
             'Dashboard',
-            'UserProfile',
         ],
 
         'widgets' => [
@@ -78,7 +82,7 @@ return [
     'discovery' => [
         'discover_all_resources' => false,
         'discover_all_widgets' => false,
-        'discover_all_pages' => true,
+        'discover_all_pages' => false,
     ],
 
     'register_role_policy' => [
