@@ -96,11 +96,6 @@ class SendNotifications extends Command
             return Command::SUCCESS;
         }
 
-        if (! $this->confirm('Send health notifications for these failed links?')) {
-            $this->info('Health notifications cancelled.');
-
-            return Command::SUCCESS;
-        }
 
         try {
             $notificationService->sendLinkHealthNotifications($failedLinks);
@@ -141,11 +136,6 @@ class SendNotifications extends Command
             return Command::SUCCESS;
         }
 
-        if (! $this->confirm('Send this system alert?')) {
-            $this->info('System alert cancelled.');
-
-            return Command::SUCCESS;
-        }
 
         try {
             $additionalData = [
@@ -217,11 +207,6 @@ class SendNotifications extends Command
             return Command::SUCCESS;
         }
 
-        if (! $this->confirm('Send this maintenance notification?')) {
-            $this->info('Maintenance notification cancelled.');
-
-            return Command::SUCCESS;
-        }
 
         try {
             $additionalData = [
