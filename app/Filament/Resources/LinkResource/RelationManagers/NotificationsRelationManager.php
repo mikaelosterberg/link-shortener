@@ -57,6 +57,7 @@ class NotificationsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('notificationGroup.name')
+            ->modifyQueryUsing(fn ($query) => $query->with(['notificationGroup.users', 'notificationGroup.channels']))
             ->columns([
                 Tables\Columns\TextColumn::make('notificationGroup.name')
                     ->label('Group')
@@ -72,12 +73,14 @@ class NotificationsRelationManager extends RelationManager
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('notificationGroup.users_count')
-                    ->counts('notificationGroup.users')
-                    ->label('Users'),
+                    ->label('Users')
+                    ->getStateUsing(fn ($record) => $record->notificationGroup?->users()->count() ?? 0)
+                    ->badge(),
 
                 Tables\Columns\TextColumn::make('notificationGroup.channels_count')
-                    ->counts('notificationGroup.channels')
-                    ->label('Channels'),
+                    ->label('Channels')
+                    ->getStateUsing(fn ($record) => $record->notificationGroup?->channels()->count() ?? 0)
+                    ->badge(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -97,11 +100,12 @@ class NotificationsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->slideOver(),
+                    ->modalHeading('Add Notification Assignment')
+                    ->modalDescription('Assign a notification group to receive alerts for this specific link.'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->slideOver(),
+                    ->modalHeading('Edit Notification Assignment'),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\Action::make('toggle_active')
                     ->label(fn ($record) => $record->is_active ? 'Deactivate' : 'Activate')
