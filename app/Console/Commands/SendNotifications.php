@@ -96,7 +96,6 @@ class SendNotifications extends Command
             return Command::SUCCESS;
         }
 
-
         try {
             $notificationService->sendLinkHealthNotifications($failedLinks);
             $this->info('✅ Health notifications sent successfully!');
@@ -135,7 +134,6 @@ class SendNotifications extends Command
 
             return Command::SUCCESS;
         }
-
 
         try {
             $additionalData = [
@@ -206,7 +204,6 @@ class SendNotifications extends Command
 
             return Command::SUCCESS;
         }
-
 
         try {
             $additionalData = [

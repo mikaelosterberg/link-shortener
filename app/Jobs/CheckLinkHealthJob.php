@@ -116,8 +116,8 @@ class CheckLinkHealthJob implements ShouldQueue
             return 'warning';
         }
 
-        // 403 Forbidden - often datacenter IP blocks
-        if ($statusCode === 403) {
+        // 401 Unauthorized and 403 Forbidden - often datacenter IP blocks or access restrictions
+        if ($statusCode === 401 || $statusCode === 403) {
             return 'blocked';
         }
 
@@ -144,6 +144,7 @@ class CheckLinkHealthJob implements ShouldQueue
             200 => 'OK',
             301 => 'Permanent redirect',
             302 => 'Temporary redirect',
+            401 => 'Unauthorized access',
             403 => 'Access blocked',
             404 => 'Page not found',
             410 => 'Page permanently removed',
