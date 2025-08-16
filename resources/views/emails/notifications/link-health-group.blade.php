@@ -38,6 +38,9 @@
                 <div class="link-item">
                     <div class="link-url">{{ $link->original_url }}</div>
                     <div><strong>Short URL:</strong> <a href="{{ $link->full_url }}" style="color: #007bff;">{{ $link->full_url }}</a></div>
+                    @if ($link->creator)
+                        <div><strong>Owner:</strong> {{ $link->creator->name }} ({{ $link->creator->email }})</div>
+                    @endif
                     @if ($link->group)
                         <div><strong>Group:</strong> {{ $link->group->name }}</div>
                     @endif
@@ -67,6 +70,9 @@
                     <div class="link-item" style="border-left-color: #ffc107;">
                         <div class="link-url">{{ $link->original_url }}</div>
                         <div><strong>Short URL:</strong> <a href="{{ $link->full_url }}" style="color: #007bff;">{{ $link->full_url }}</a></div>
+                        @if ($link->creator)
+                            <div><strong>Owner:</strong> {{ $link->creator->name }} ({{ $link->creator->email }})</div>
+                        @endif
                         @if ($link->group)
                             <div><strong>Group:</strong> {{ $link->group->name }}</div>
                         @endif
