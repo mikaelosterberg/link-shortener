@@ -81,17 +81,29 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 
 ### 🔍 Link Health Monitoring
 - **Automated Health Checks** - Periodic checking of destination URLs
-- **Smart Scheduling** - Healthy links checked weekly, errors checked daily
+- **Smart Scheduling** - Healthy links checked weekly, errors checked daily, timeouts every 3 days
 - **Visual Status Indicators** - Color-coded icons show link health at a glance
 - **Health Dashboard Widget** - Real-time overview of all link statuses
 - **Manual Health Checks** - Check individual or bulk links on demand
 - **Detailed Diagnostics** - HTTP status codes, redirect chains, and error messages
 - **Queue-Based Processing** - Non-blocking health checks via job queue
+- **Timeout Detection** - Separate categorization for links that timeout (likely blocking datacenter IPs)
+- **Exclusion Controls** - Individually exclude links from health checks
+- **Configurable Timeout** - Set custom timeout duration for health checks (default 10 seconds)
 
-### 📧 Notification System
+### 📧 Advanced Notification System
 - **Multi-Channel Notifications** - Email, Webhook, Slack, Discord, Microsoft Teams
 - **Notification Groups** - Create groups with multiple users and channels
 - **Configurable Health Reports** - Comprehensive email reports of all failed links (frequency based on your cron setup)
+- **Smart Notification Limits** - Set maximum notifications per link (default: 3) to prevent spam
+- **Cooldown Periods** - Configure hours between notifications for the same link (default: 24 hours)
+- **New vs Previously Failed** - Email templates clearly separate new failures from ongoing issues
+- **Status Code Filtering** - Choose exactly which HTTP status codes trigger notifications
+- **Timeout Exclusion** - Option to exclude timeout errors from notifications (for servers blocking datacenters)
+- **Batch Limits** - Control maximum links per notification email
+- **First Failure Tracking** - Track when each link first failed for context
+- **Automatic Pause** - Notifications automatically pause after reaching the limit
+- **Recovery Detection** - Counters reset when links become healthy again
 - **System Alerts** - Manual alerts for operational issues with severity levels
 - **Maintenance Notifications** - Scheduled maintenance announcements with timing
 - **Professional Email Templates** - Clean templates with direct edit links for easy fixing
@@ -521,12 +533,25 @@ The application includes a comprehensive notification system that monitors link 
    - **Discord** - Webhook URLs with rich embed formatting
    - **Microsoft Teams** - Webhook URLs with card formatting
 
+**Configuring Notification Limits:**
+1. Navigate to "Settings" → "Notification Limits"
+2. Configure these settings:
+   - **Maximum notifications per link** - How many times to notify before pausing (default: 3, set to 0 for unlimited)
+   - **Notification cooldown** - Hours to wait between notifications for the same link (default: 24)
+   - **Batch notification limit** - Maximum failed links per email (default: 50)
+   - **Check timeout** - Seconds to wait for response before marking as timeout (default: 10)
+   - **Exclude timeouts** - Don't notify for timeout errors (useful for servers blocking datacenter IPs)
+   - **Status code filtering** - Choose exactly which HTTP status codes trigger notifications
+
 **Automated Health Notifications:**
 ```bash
 # Health notifications (configure frequency as needed)
 0 9 * * * cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1   # Daily at 9 AM
 0 */6 * * * cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1  # Every 6 hours
 0 9 * * MON cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1  # Weekly on Monday
+
+# Dry run to preview what would be sent
+php artisan notifications:send health --dry-run
 
 # Health checks every 30 minutes
 */30 * * * * cd /path/to/project && php artisan links:check-health >/dev/null 2>&1

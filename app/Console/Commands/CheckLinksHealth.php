@@ -36,9 +36,10 @@ class CheckLinksHealth extends Command
 
         $this->info('Starting link health check...');
 
-        // Build query - only check active, non-expired links
+        // Build query - only check active, non-expired links that are not excluded
         $query = Link::query()
             ->where('is_active', true)
+            ->where('exclude_from_health_checks', false)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());

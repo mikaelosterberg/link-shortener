@@ -16,7 +16,7 @@ class NotificationService
     /**
      * Send link health notifications for failed links
      */
-    public function sendLinkHealthNotifications(Collection $failedLinks): void
+    public function sendLinkHealthNotifications(Collection $failedLinks, ?Collection $previouslyFailedLinks = null): void
     {
         $notificationType = NotificationType::where('name', 'link_health')
             ->where('is_active', true)
@@ -33,12 +33,24 @@ class NotificationService
 
         // Send group notifications (batched)
         foreach ($groupedNotifications['groups'] as $groupId => $links) {
-            $this->sendGroupHealthNotification($groupId, $links, $notificationType);
+            // Get previously failed links for this group if any
+            $previousLinks = $previouslyFailedLinks ?
+                $previouslyFailedLinks->filter(function ($link) use ($groupId) {
+                    return $link->group_id == $groupId;
+                }) : collect();
+
+            $this->sendGroupHealthNotification($groupId, $links, $notificationType, $previousLinks);
         }
 
         // Send individual owner notifications
         foreach ($groupedNotifications['owners'] as $userId => $links) {
-            $this->sendOwnerHealthNotification($userId, $links, $notificationType);
+            // Get previously failed links for this owner if any
+            $previousLinks = $previouslyFailedLinks ?
+                $previouslyFailedLinks->filter(function ($link) use ($userId) {
+                    return $link->created_by == $userId;
+                }) : collect();
+
+            $this->sendOwnerHealthNotification($userId, $links, $notificationType, $previousLinks);
         }
     }
 
@@ -112,7 +124,7 @@ class NotificationService
     /**
      * Send batched health notification to a group
      */
-    private function sendGroupHealthNotification(int $groupId, Collection $links, NotificationType $notificationType): void
+    private function sendGroupHealthNotification(int $groupId, Collection $links, NotificationType $notificationType, ?Collection $previousLinks = null): void
     {
         $group = NotificationGroup::find($groupId);
         if (! $group || ! $group->is_active) {
@@ -121,11 +133,26 @@ class NotificationService
 
         $targets = $group->getAllTargets();
 
-        $subject = 'Link Health Alert - '.$links->count().' Link'.($links->count() > 1 ? 's' : '').' Failed';
+        $newCount = $links->count();
+        $previousCount = $previousLinks ? $previousLinks->count() : 0;
+        $totalCount = $newCount + $previousCount;
+
+        $subject = 'Link Health Alert - ';
+        if ($newCount > 0 && $previousCount > 0) {
+            $subject .= $newCount.' New + '.$previousCount.' Previously Failed Links';
+        } elseif ($newCount > 0) {
+            $subject .= $newCount.' Link'.($newCount > 1 ? 's' : '').' Failed';
+        } else {
+            $subject .= $previousCount.' Previously Failed Link'.($previousCount > 1 ? 's' : '');
+        }
+
         $data = [
             'group_name' => $group->name,
             'failed_links' => $links,
-            'total_count' => $links->count(),
+            'previously_failed_links' => $previousLinks,
+            'total_count' => $totalCount,
+            'new_count' => $newCount,
+            'previous_count' => $previousCount,
             'notification_type' => $notificationType,
         ];
 
@@ -157,18 +184,31 @@ class NotificationService
     /**
      * Send individual health notification to link owner
      */
-    private function sendOwnerHealthNotification(int $userId, Collection $links, NotificationType $notificationType): void
+    private function sendOwnerHealthNotification(int $userId, Collection $links, NotificationType $notificationType, ?Collection $previousLinks = null): void
     {
         $user = User::find($userId);
         if (! $user) {
             return;
         }
 
-        $subject = 'Your Link'.($links->count() > 1 ? 's' : '').' Health Alert';
+        $newCount = $links->count();
+        $previousCount = $previousLinks ? $previousLinks->count() : 0;
+
+        if ($newCount > 0 && $previousCount > 0) {
+            $subject = 'Your Links Health Alert - '.$newCount.' New + '.$previousCount.' Previously Failed';
+        } elseif ($newCount > 0) {
+            $subject = 'Your Link'.($newCount > 1 ? 's' : '').' Health Alert';
+        } else {
+            $subject = 'Your '.$previousCount.' Link'.($previousCount > 1 ? 's' : '').' Still Failed';
+        }
+
         $data = [
             'user' => $user,
             'failed_links' => $links,
-            'total_count' => $links->count(),
+            'previously_failed_links' => $previousLinks,
+            'total_count' => $newCount + $previousCount,
+            'new_count' => $newCount,
+            'previous_count' => $previousCount,
             'notification_type' => $notificationType,
         ];
 

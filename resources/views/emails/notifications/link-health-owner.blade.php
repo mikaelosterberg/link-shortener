@@ -19,15 +19,28 @@
     <div class="container">
         <div class="header">
             <h1>🚨 Your Links Health Alert</h1>
-            <p>{{ $total_count }} of your link{{ $total_count > 1 ? 's have' : ' has' }} failed health checks</p>
+            @if($new_count > 0 && $previous_count > 0)
+                <p>{{ $new_count }} new failure{{ $new_count > 1 ? 's' : '' }} + {{ $previous_count }} still broken</p>
+            @elseif($new_count > 0)
+                <p>{{ $new_count }} of your link{{ $new_count > 1 ? 's have' : ' has' }} failed health checks</p>
+            @else
+                <p>{{ $previous_count }} of your link{{ $previous_count > 1 ? 's are' : ' is' }} still broken</p>
+            @endif
         </div>
 
         <div class="content">
             <p>Hello {{ $user->name }},</p>
-            <p>We've detected issues with {{ $total_count }} of your shortened link{{ $total_count > 1 ? 's' : '' }}. Please review and fix the issues below:</p>
+            @if($new_count > 0 && $previous_count > 0)
+                <p>We've detected {{ $new_count }} new issue{{ $new_count > 1 ? 's' : '' }} with your links, and {{ $previous_count }} link{{ $previous_count > 1 ? 's' : '' }} remain{{ $previous_count == 1 ? 's' : '' }} broken. Please review and fix the issues below:</p>
+            @elseif($new_count > 0)
+                <p>We've detected issues with {{ $new_count }} of your shortened link{{ $new_count > 1 ? 's' : '' }}. Please review and fix the issues below:</p>
+            @else
+                <p>The following {{ $previous_count }} link{{ $previous_count > 1 ? 's' : '' }} remain{{ $previous_count == 1 ? 's' : '' }} broken. Please fix {{ $previous_count > 1 ? 'them' : 'it' }} as soon as possible:</p>
+            @endif
 
-            <h3>Your Failed Links:</h3>
-            @foreach ($failed_links as $link)
+            @if($failed_links->isNotEmpty())
+                <h3>🆕 Newly Failed Links:</h3>
+                @foreach ($failed_links as $link)
                 <div class="link-item">
                     <div class="link-url">{{ $link->original_url }}</div>
                     <div><strong>Short URL:</strong> <a href="{{ $link->full_url }}" style="color: #007bff;">{{ $link->full_url }}</a></div>
@@ -50,7 +63,36 @@
                         </a>
                     </div>
                 </div>
-            @endforeach
+                @endforeach
+            @endif
+
+            @if(isset($previously_failed_links) && $previously_failed_links->isNotEmpty())
+                <h3>⚠️ Still Broken (previously notified):</h3>
+                @foreach ($previously_failed_links as $link)
+                    <div class="link-item" style="border-left-color: #ffc107;">
+                        <div class="link-url">{{ $link->original_url }}</div>
+                        <div><strong>Short URL:</strong> <a href="{{ $link->full_url }}" style="color: #007bff;">{{ $link->full_url }}</a></div>
+                        @if ($link->group)
+                            <div><strong>Group:</strong> {{ $link->group->name }}</div>
+                        @endif
+                        <div class="error-message">
+                            <strong>Error:</strong> {{ $link->health_check_message ?? 'Health check failed' }}
+                            @if ($link->http_status_code)
+                                (HTTP {{ $link->http_status_code }})
+                            @endif
+                        </div>
+                        @if ($link->first_failure_detected_at)
+                            <div class="timestamp">Broken since: {{ $link->first_failure_detected_at->format('Y-m-d H:i:s T') }}</div>
+                        @endif
+                        <div style="margin-top: 10px;">
+                            <a href="{{ url('/admin/links/' . $link->id . '/edit') }}" 
+                               style="background: #ffc107; color: #333; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">
+                                ⚠️ Fix This Link
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
 
             <h3>How to fix your links:</h3>
             <ul>

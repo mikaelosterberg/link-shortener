@@ -30,6 +30,11 @@ class Link extends Model
         'http_status_code',
         'health_check_message',
         'final_url',
+        'exclude_from_health_checks',
+        'notification_count',
+        'last_notification_sent_at',
+        'first_failure_detected_at',
+        'notification_paused',
     ];
 
     protected $casts = [
@@ -42,6 +47,11 @@ class Link extends Model
         'click_limit' => 'integer',
         'redirect_type' => 'integer',
         'http_status_code' => 'integer',
+        'exclude_from_health_checks' => 'boolean',
+        'notification_count' => 'integer',
+        'last_notification_sent_at' => 'datetime',
+        'first_failure_detected_at' => 'datetime',
+        'notification_paused' => 'boolean',
     ];
 
     public function group(): BelongsTo
@@ -129,6 +139,7 @@ class Link extends Model
             'warning' => $this->last_checked_at->lt(now()->subDays(3)), // Every 3 days for warnings
             'error' => $this->last_checked_at->lt(now()->subDay()),     // Daily for errors
             'blocked' => $this->last_checked_at->lt(now()->subDays(7)), // Weekly for blocked (may be datacenter IP issue)
+            'timeout' => $this->last_checked_at->lt(now()->subDays(3)), // Every 3 days for timeouts
             default => true,
         };
     }
@@ -143,6 +154,7 @@ class Link extends Model
             'warning' => 'warning',
             'error' => 'danger',
             'blocked' => 'info',
+            'timeout' => 'warning',
             default => 'gray',
         };
     }
@@ -157,6 +169,7 @@ class Link extends Model
             'warning' => 'heroicon-o-exclamation-triangle',
             'error' => 'heroicon-o-x-circle',
             'blocked' => 'heroicon-o-shield-exclamation',
+            'timeout' => 'heroicon-o-clock',
             default => 'heroicon-o-question-mark-circle',
         };
     }

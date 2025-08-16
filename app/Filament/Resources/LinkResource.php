@@ -117,6 +117,29 @@ class LinkResource extends Resource
                                 'x-on:input' => '$el.dataset.userSet = "true"',
                             ]),
                     ])->columns(2),
+                Forms\Components\Section::make('Health Monitoring')
+                    ->schema([
+                        Forms\Components\Toggle::make('exclude_from_health_checks')
+                            ->label('Exclude from health checks')
+                            ->default(false)
+                            ->helperText('When enabled, this link will not be checked for health status or trigger notifications'),
+                        Forms\Components\Toggle::make('notification_paused')
+                            ->label('Pause notifications')
+                            ->default(false)
+                            ->helperText('Temporarily stop sending failure notifications for this link')
+                            ->visible(fn ($record) => $record !== null && $record->notification_count > 0),
+                        Forms\Components\Placeholder::make('health_status_info')
+                            ->label('Current Status')
+                            ->content(fn ($record) => $record ? ucfirst($record->health_status ?? 'Not checked') : 'Not checked yet')
+                            ->visible(fn ($record) => $record !== null),
+                        Forms\Components\Placeholder::make('notification_info')
+                            ->label('Notifications Sent')
+                            ->content(fn ($record) => $record && $record->notification_count > 0
+                                ? "{$record->notification_count} notification(s) sent. Last sent: ".
+                                  ($record->last_notification_sent_at ? TimezoneService::formatForUser($record->last_notification_sent_at, 'M j, Y g:i A') : 'Never')
+                                : 'No notifications sent')
+                            ->visible(fn ($record) => $record !== null && $record->notification_count > 0),
+                    ])->columns(2),
                 Forms\Components\Hidden::make('created_by')
                     ->default(auth()->id()),
                 Forms\Components\Hidden::make('short_code'),
@@ -254,6 +277,7 @@ class LinkResource extends Resource
                         'warning' => 'Warning',
                         'error' => 'Error',
                         'blocked' => 'Blocked',
+                        'timeout' => 'Timeout',
                     ])
                     ->label('Health Status'),
                 Tables\Filters\TernaryFilter::make('is_active')

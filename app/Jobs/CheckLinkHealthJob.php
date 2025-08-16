@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -40,8 +41,11 @@ class CheckLinkHealthJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            // Get timeout setting from cache (default 10 seconds)
+            $timeout = Cache::get('health_check.timeout_seconds', 10);
+
             // Make HTTP request with redirects disabled to check the direct response
-            $response = Http::timeout(20)
+            $response = Http::timeout($timeout)
                 ->withOptions([
                     'allow_redirects' => [
                         'max' => 10,
@@ -62,30 +66,62 @@ class CheckLinkHealthJob implements ShouldQueue
             $message = $this->generateHealthMessage($statusCode, $finalUrl);
 
             // Update link with health check results
-            $this->link->update([
+            $updateData = [
                 'last_checked_at' => now(),
                 'health_status' => $healthStatus,
                 'http_status_code' => $statusCode,
                 'health_check_message' => $message,
                 'final_url' => $finalUrl !== $this->link->original_url ? $finalUrl : null,
-            ]);
+            ];
+
+            // Track first failure if this is a new failure
+            if ($healthStatus === 'error' && $this->link->health_status !== 'error' && ! $this->link->first_failure_detected_at) {
+                $updateData['first_failure_detected_at'] = now();
+            }
+
+            // Reset failure tracking if link is now healthy
+            if ($healthStatus === 'healthy' && $this->link->health_status !== 'healthy') {
+                $updateData['first_failure_detected_at'] = null;
+                $updateData['notification_count'] = 0;
+                $updateData['notification_paused'] = false;
+            }
+
+            $this->link->update($updateData);
 
         } catch (\Exception $e) {
             // Handle connection errors, timeouts, etc.
             $errorMessage = $e->getMessage();
+
+            // Check if this is a timeout
+            $isTimeout = str_contains($errorMessage, 'cURL error 28') ||
+                        str_contains($errorMessage, 'timed out') ||
+                        str_contains($errorMessage, 'timeout');
 
             // Check if this is a redirect loop/limit issue
             $isRedirectIssue = str_contains($errorMessage, 'Will not follow more than') ||
                                str_contains($errorMessage, 'redirect') ||
                                str_contains($errorMessage, 'Too many redirects');
 
-            $this->link->update([
+            // Determine status based on error type
+            $healthStatus = $isTimeout ? 'timeout' : ($isRedirectIssue ? 'warning' : 'error');
+            $message = $isTimeout ? 'Connection timeout' : 'Failed to connect: '.$errorMessage;
+
+            $updateData = [
                 'last_checked_at' => now(),
-                'health_status' => $isRedirectIssue ? 'warning' : 'error',
+                'health_status' => $healthStatus,
                 'http_status_code' => null,
-                'health_check_message' => 'Failed to connect: '.$errorMessage,
+                'health_check_message' => $message,
                 'final_url' => null,
-            ]);
+            ];
+
+            // Track first failure if this is a new failure
+            if (in_array($healthStatus, ['error', 'timeout']) &&
+                ! in_array($this->link->health_status, ['error', 'timeout']) &&
+                ! $this->link->first_failure_detected_at) {
+                $updateData['first_failure_detected_at'] = now();
+            }
+
+            $this->link->update($updateData);
 
             Log::warning('Link health check failed', [
                 'link_id' => $this->link->id,

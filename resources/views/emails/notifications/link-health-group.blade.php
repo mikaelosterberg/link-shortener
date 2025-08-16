@@ -19,15 +19,22 @@
     <div class="container">
         <div class="header">
             <h1>🚨 Link Health Alert</h1>
-            <p>{{ $total_count }} link{{ $total_count > 1 ? 's have' : ' has' }} failed health checks</p>
+            @if($new_count > 0 && $previous_count > 0)
+                <p>{{ $new_count }} new failure{{ $new_count > 1 ? 's' : '' }} + {{ $previous_count }} previously failed link{{ $previous_count > 1 ? 's' : '' }}</p>
+            @elseif($new_count > 0)
+                <p>{{ $new_count }} link{{ $new_count > 1 ? 's have' : ' has' }} failed health checks</p>
+            @else
+                <p>{{ $previous_count }} link{{ $previous_count > 1 ? 's' : '' }} still failing</p>
+            @endif
         </div>
 
         <div class="content">
             <p><strong>Notification Group:</strong> {{ $group_name }}</p>
             <p><strong>Check Time:</strong> <span class="timestamp">{{ now()->format('Y-m-d H:i:s T') }}</span></p>
 
-            <h3>Failed Links:</h3>
-            @foreach ($failed_links as $link)
+            @if($failed_links->isNotEmpty())
+                <h3>🆕 Newly Failed Links ({{ $failed_links->count() }}):</h3>
+                @foreach ($failed_links as $link)
                 <div class="link-item">
                     <div class="link-url">{{ $link->original_url }}</div>
                     <div><strong>Short URL:</strong> <a href="{{ $link->full_url }}" style="color: #007bff;">{{ $link->full_url }}</a></div>
@@ -50,10 +57,39 @@
                         </a>
                     </div>
                 </div>
-            @endforeach
+                @endforeach
+            @endif
 
-            @if ($total_count > $failed_links->count())
-                <p><em>... and {{ $total_count - $failed_links->count() }} more links</em></p>
+            @if(isset($previously_failed_links) && $previously_failed_links->isNotEmpty())
+                <h3>⚠️ Previously Failed Links (still broken):</h3>
+                <p style="color: #6c757d; font-size: 0.9em;">These links have already been notified {{ $previously_failed_links->first()->notification_count ?? 'multiple' }} time(s)</p>
+                @foreach ($previously_failed_links->take(10) as $link)
+                    <div class="link-item" style="border-left-color: #ffc107;">
+                        <div class="link-url">{{ $link->original_url }}</div>
+                        <div><strong>Short URL:</strong> <a href="{{ $link->full_url }}" style="color: #007bff;">{{ $link->full_url }}</a></div>
+                        @if ($link->group)
+                            <div><strong>Group:</strong> {{ $link->group->name }}</div>
+                        @endif
+                        <div class="error-message">
+                            <strong>Error:</strong> {{ $link->health_check_message ?? 'Health check failed' }}
+                            @if ($link->http_status_code)
+                                (HTTP {{ $link->http_status_code }})
+                            @endif
+                        </div>
+                        @if ($link->first_failure_detected_at)
+                            <div class="timestamp">First failed: {{ $link->first_failure_detected_at->format('Y-m-d H:i:s T') }}</div>
+                        @endif
+                        <div style="margin-top: 10px;">
+                            <a href="{{ url('/admin/links/' . $link->id . '/edit') }}" 
+                               style="background: #007bff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">
+                                🔧 Edit Link
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+                @if ($previously_failed_links->count() > 10)
+                    <p><em>... and {{ $previously_failed_links->count() - 10 }} more previously failed links</em></p>
+                @endif
             @endif
         </div>
 

@@ -30,6 +30,7 @@ class LinkHealthWidget extends BaseWidget
         $warning = $healthCounts['warning'] ?? 0;
         $error = $healthCounts['error'] ?? 0;
         $blocked = $healthCounts['blocked'] ?? 0;
+        $timeout = $healthCounts['timeout'] ?? 0;
         $unchecked = $healthCounts['unchecked'] ?? 0;
         $total = array_sum($healthCounts);
 
@@ -46,7 +47,7 @@ class LinkHealthWidget extends BaseWidget
             : 'No checks performed yet';
 
         // Calculate health percentage
-        $checkedTotal = $healthy + $warning + $error + $blocked;
+        $checkedTotal = $healthy + $warning + $error + $blocked + $timeout;
         $healthPercentage = $checkedTotal > 0
             ? round(($healthy / $checkedTotal) * 100, 1)
             : 0;
@@ -58,8 +59,8 @@ class LinkHealthWidget extends BaseWidget
                 ->color('success')
                 ->chart($this->getHealthTrend('healthy')),
 
-            Stat::make('Warning Links', $warning)
-                ->description('May have redirects or issues')
+            Stat::make('Warning Links', $warning + $timeout)
+                ->description($timeout > 0 ? "Warnings: {$warning}, Timeouts: {$timeout}" : 'May have redirects or issues')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color('warning')
                 ->chart($this->getHealthTrend('warning')),
