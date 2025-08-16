@@ -11,13 +11,13 @@ return [
     */
     'homepage' => [
         // Redirect to admin panel instead of showing landing page
-        'redirect_to_admin' => false,
+        'redirect_to_admin' => env('HOMEPAGE_REDIRECT_TO_ADMIN', false),
 
         // Custom redirect URL (takes precedence over redirect_to_admin)
-        'redirect_url' => null,
+        'redirect_url' => env('HOMEPAGE_REDIRECT_URL'),
 
         // Custom view to show (default: welcome)
-        'view' => 'welcome',
+        'view' => env('HOMEPAGE_VIEW', 'welcome'),
     ],
 
     /*
@@ -30,13 +30,13 @@ return [
     */
     'not_found' => [
         // URL to redirect to instead of showing 404
-        'redirect_url' => null,
+        'redirect_url' => env('NOT_FOUND_REDIRECT_URL'),
 
         // Whether to track 404 attempts for analytics
-        'track_attempts' => true,
+        'track_attempts' => env('NOT_FOUND_TRACK_ATTEMPTS', true),
 
         // Custom 404 view
-        'view' => null,
+        'view' => env('NOT_FOUND_VIEW'),
     ],
 
     /*
