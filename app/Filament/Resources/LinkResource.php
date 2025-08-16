@@ -269,7 +269,17 @@ class LinkResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('group')
-                    ->relationship('group', 'name'),
+                    ->relationship('group', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->indicator('Group'),
+                Tables\Filters\SelectFilter::make('creator')
+                    ->relationship('creator', 'name')
+                    ->label('Created By')
+                    ->searchable()
+                    ->preload()
+                    ->indicator('Created By')
+                    ->visible(fn () => auth()->user()->can('view_any_link')),
                 Tables\Filters\SelectFilter::make('health_status')
                     ->options([
                         'unchecked' => 'Not Checked',
@@ -279,7 +289,8 @@ class LinkResource extends Resource
                         'blocked' => 'Blocked',
                         'timeout' => 'Timeout',
                     ])
-                    ->label('Health Status'),
+                    ->label('Health Status')
+                    ->indicator('Health Status'),
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active'),
                 Tables\Filters\Filter::make('expired')
@@ -507,6 +518,18 @@ class LinkResource extends Resource
             'create' => Pages\CreateLink::route('/create'),
             'edit' => Pages\EditLink::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // If user can only view their own links, filter by created_by
+        if (! auth()->user()->can('view_any_link')) {
+            $query->where('created_by', auth()->id());
+        }
+
+        return $query;
     }
 
     /**
