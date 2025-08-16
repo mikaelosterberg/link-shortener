@@ -32,7 +32,6 @@ class SendHealthNotifications extends Command
 
         // Get notification settings
         $notifyOnStatuses = Cache::get('health_check.notify_on_status_codes', ['404']);
-        $excludeTimeout = Cache::get('health_check.exclude_timeout_from_notifications', true);
         $maxNotifications = Cache::get('health_check.max_notifications_per_link', 3);
         $cooldownHours = Cache::get('health_check.notification_cooldown_hours', 24);
 
@@ -45,9 +44,7 @@ class SendHealthNotifications extends Command
         $statusConditions = [];
         foreach ($notifyOnStatuses as $status) {
             if ($status === 'timeout') {
-                if (! $excludeTimeout) {
-                    $statusConditions[] = 'timeout';
-                }
+                $statusConditions[] = 'timeout';
             } elseif ($status === 'connection_failed') {
                 $statusConditions[] = 'error';
             } else {

@@ -35,7 +35,6 @@ class NotificationLimitsSettings extends Page implements HasForms
             'notification_cooldown_hours' => Cache::get('health_check.notification_cooldown_hours', 24),
             'check_timeout_seconds' => Cache::get('health_check.timeout_seconds', 10),
             'notify_on_status_codes' => Cache::get('health_check.notify_on_status_codes', ['404']),
-            'exclude_timeout_from_notifications' => Cache::get('health_check.exclude_timeout_from_notifications', true),
             'batch_notification_limit' => Cache::get('health_check.batch_notification_limit', 50),
         ]);
     }
@@ -80,11 +79,7 @@ class NotificationLimitsSettings extends Page implements HasForms
                             ->maxValue(60)
                             ->helperText('Seconds to wait for a response before marking as timeout')
                             ->required(),
-                        Forms\Components\Toggle::make('exclude_timeout_from_notifications')
-                            ->label('Exclude timeouts from notifications')
-                            ->helperText('Do not send notifications for links that timeout (likely blocked by server)')
-                            ->columnSpan(2),
-                    ])->columns(3),
+                    ]),
 
                 Forms\Components\Section::make('Status Code Filtering')
                     ->description('Choose which HTTP status codes should trigger notifications')
@@ -100,7 +95,7 @@ class NotificationLimitsSettings extends Page implements HasForms
                                 '500' => '500 - Internal Server Error',
                                 '502' => '502 - Bad Gateway',
                                 '503' => '503 - Service Unavailable',
-                                'timeout' => 'Timeout (no response)',
+                                'timeout' => 'Timeout (no response - often blocked by server)',
                                 'connection_failed' => 'Connection Failed',
                             ])
                             ->columns(2)
@@ -120,7 +115,6 @@ class NotificationLimitsSettings extends Page implements HasForms
         Cache::forever('health_check.notification_cooldown_hours', $data['notification_cooldown_hours']);
         Cache::forever('health_check.timeout_seconds', $data['check_timeout_seconds']);
         Cache::forever('health_check.notify_on_status_codes', $data['notify_on_status_codes']);
-        Cache::forever('health_check.exclude_timeout_from_notifications', $data['exclude_timeout_from_notifications']);
         Cache::forever('health_check.batch_notification_limit', $data['batch_notification_limit']);
 
         Notification::make()
