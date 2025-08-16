@@ -67,10 +67,10 @@ class ListLinks extends ListRecords implements HasForms
                                     ->url()
                                     ->placeholder('https://example.com/your-long-url'),
                                 Forms\Components\Select::make('group_id')
-                                    ->label('Category')
+                                    ->label('Group')
                                     ->options(LinkGroup::pluck('name', 'id'))
                                     ->searchable()
-                                    ->placeholder('Select category...'),
+                                    ->placeholder('Select group...'),
                                 Forms\Components\Actions::make([
                                     Forms\Components\Actions\Action::make('quickAdd')
                                         ->label('Add Link')

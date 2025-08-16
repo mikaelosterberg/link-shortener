@@ -44,7 +44,7 @@ class LinkResource extends Resource
                             ->url()
                             ->placeholder('https://example.com/long-url'),
                         Forms\Components\Select::make('group_id')
-                            ->label('Category')
+                            ->label('Group')
                             ->relationship('group', 'name')
                             ->searchable()
                             ->preload()
@@ -193,7 +193,7 @@ class LinkResource extends Resource
                     ->tooltip(fn ($state) => $state)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('group.name')
-                    ->label('Category')
+                    ->label('Group')
                     ->html()
                     ->formatStateUsing(function ($state, $record) {
                         if (! $state) {
@@ -211,11 +211,13 @@ class LinkResource extends Resource
                             e($state)
                         );
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('click_count')
                     ->label('Clicks')
                     ->numeric()
                     ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->description(function ($record) {
                         if ($record->hasClickLimit()) {
                             $remaining = $record->remaining_clicks;
@@ -237,6 +239,7 @@ class LinkResource extends Resource
                     ->label('Health')
                     ->icon(fn ($record) => $record->health_status_icon)
                     ->color(fn ($record) => $record->health_status_color)
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->tooltip(function ($record) {
                         if (! $record->last_checked_at) {
                             return 'Not checked yet';
@@ -259,7 +262,7 @@ class LinkResource extends Resource
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By')
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
                     ->formatStateUsing(fn ($state) => TimezoneService::formatForUser($state, 'M j, Y g:i A'))
