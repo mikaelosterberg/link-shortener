@@ -215,11 +215,14 @@ class CheckLinkHealthJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        // When the job itself fails (usually due to queue timeout),
+        // we mark it as an error but with a specific message
+        // This helps differentiate from HTTP errors
         $this->link->update([
             'last_checked_at' => now(),
             'health_status' => 'error',
             'http_status_code' => null,
-            'health_check_message' => 'Health check job failed',
+            'health_check_message' => 'Health check job failed (timeout)',
             'final_url' => null,
         ]);
     }

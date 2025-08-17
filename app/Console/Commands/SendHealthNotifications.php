@@ -40,22 +40,36 @@ class SendHealthNotifications extends Command
             ->where('exclude_from_health_checks', false)
             ->where('notification_paused', false);
 
-        // Build status conditions
-        $statusConditions = [];
-        foreach ($notifyOnStatuses as $status) {
-            if ($status === 'timeout') {
-                $statusConditions[] = 'timeout';
-            } elseif ($status === 'connection_failed') {
-                $statusConditions[] = 'error';
-            } else {
-                // HTTP status codes
-                $query->orWhere('http_status_code', $status);
+        // Filter by selected status codes and conditions
+        $query->where(function ($q) use ($notifyOnStatuses) {
+            foreach ($notifyOnStatuses as $status) {
+                if ($status === 'timeout') {
+                    // Include links with timeout status OR job failures (which are timeouts)
+                    $q->orWhere('health_status', 'timeout')
+                      ->orWhere(function ($subQ) {
+                          $subQ->where('health_status', 'error')
+                               ->whereNull('http_status_code')
+                               ->where(function ($innerQ) {
+                                   $innerQ->where('health_check_message', 'like', '%timeout%')
+                                          ->orWhere('health_check_message', 'like', '%job failed%');
+                               });
+                      });
+                } elseif ($status === 'connection_failed') {
+                    // Include links with error status (connection failures)
+                    // BUT only if they don't have an HTTP status code (meaning it's a connection error, not an HTTP error)
+                    // AND it's not a job failure/timeout
+                    $q->orWhere(function ($subQ) {
+                        $subQ->where('health_status', 'error')
+                             ->whereNull('http_status_code')
+                             ->where('health_check_message', 'not like', '%timeout%')
+                             ->where('health_check_message', 'not like', '%job failed%');
+                    });
+                } else {
+                    // HTTP status codes - only include if the status code matches
+                    $q->orWhere('http_status_code', $status);
+                }
             }
-        }
-
-        if (! empty($statusConditions)) {
-            $query->whereIn('health_status', $statusConditions);
-        }
+        });
 
         // Apply notification limits
         if ($maxNotifications > 0) {
