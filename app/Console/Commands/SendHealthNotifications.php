@@ -38,7 +38,10 @@ class SendHealthNotifications extends Command
         // Build query for failed links
         $query = Link::where('is_active', true)
             ->where('exclude_from_health_checks', false)
-            ->where('notification_paused', false);
+            ->where(function ($q) {
+                $q->where('notification_paused', false)
+                    ->orWhereNull('notification_paused');
+            });
 
         // Filter by selected status codes and conditions
         $query->where(function ($q) use ($notifyOnStatuses) {
@@ -46,23 +49,23 @@ class SendHealthNotifications extends Command
                 if ($status === 'timeout') {
                     // Include links with timeout status OR job failures (which are timeouts)
                     $q->orWhere('health_status', 'timeout')
-                      ->orWhere(function ($subQ) {
-                          $subQ->where('health_status', 'error')
-                               ->whereNull('http_status_code')
-                               ->where(function ($innerQ) {
-                                   $innerQ->where('health_check_message', 'like', '%timeout%')
-                                          ->orWhere('health_check_message', 'like', '%job failed%');
-                               });
-                      });
+                        ->orWhere(function ($subQ) {
+                            $subQ->where('health_status', 'error')
+                                ->whereNull('http_status_code')
+                                ->where(function ($innerQ) {
+                                    $innerQ->where('health_check_message', 'like', '%timeout%')
+                                        ->orWhere('health_check_message', 'like', '%job failed%');
+                                });
+                        });
                 } elseif ($status === 'connection_failed') {
                     // Include links with error status (connection failures)
                     // BUT only if they don't have an HTTP status code (meaning it's a connection error, not an HTTP error)
                     // AND it's not a job failure/timeout
                     $q->orWhere(function ($subQ) {
                         $subQ->where('health_status', 'error')
-                             ->whereNull('http_status_code')
-                             ->where('health_check_message', 'not like', '%timeout%')
-                             ->where('health_check_message', 'not like', '%job failed%');
+                            ->whereNull('http_status_code')
+                            ->where('health_check_message', 'not like', '%timeout%')
+                            ->where('health_check_message', 'not like', '%job failed%');
                     });
                 } else {
                     // HTTP status codes - only include if the status code matches
@@ -103,6 +106,7 @@ class SendHealthNotifications extends Command
             $this->warn("Found {$failedLinks->count()} newly failed links:");
             foreach ($failedLinks as $link) {
                 $this->line("  - {$link->original_url} ({$link->health_status}): {$link->health_check_message}");
+                $this->line("    Notification count: {$link->notification_count}, Last sent: {$link->last_notification_sent_at}");
             }
         }
 
@@ -130,14 +134,18 @@ class SendHealthNotifications extends Command
 
             // Update notification counts for notified links
             foreach ($failedLinks as $link) {
+                // Ensure we handle NULL notification_count properly
+                $currentCount = $link->notification_count ?? 0;
+                $newCount = $currentCount + 1;
+
                 $link->update([
-                    'notification_count' => $link->notification_count + 1,
+                    'notification_count' => $newCount,
                     'last_notification_sent_at' => now(),
                 ]);
 
                 // Check if we've hit the limit and should pause notifications
                 $maxNotifications = Cache::get('health_check.max_notifications_per_link', 3);
-                if ($maxNotifications > 0 && $link->notification_count >= $maxNotifications) {
+                if ($maxNotifications > 0 && $newCount >= $maxNotifications) {
                     $link->update(['notification_paused' => true]);
                 }
             }

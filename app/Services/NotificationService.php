@@ -30,25 +30,26 @@ class NotificationService
 
         // Group failed links by notification groups and link owners
         $groupedNotifications = $this->groupLinksByNotificationTargets($failedLinks, $notificationType);
+        
+        // Also group previously failed links to properly match them with notification groups
+        $groupedPreviousNotifications = $previouslyFailedLinks ? 
+            $this->groupLinksByNotificationTargets($previouslyFailedLinks, $notificationType) : 
+            ['groups' => [], 'owners' => []];
 
         // Send group notifications (batched)
         foreach ($groupedNotifications['groups'] as $groupId => $links) {
-            // Get previously failed links for this group if any
-            $previousLinks = $previouslyFailedLinks ?
-                $previouslyFailedLinks->filter(function ($link) use ($groupId) {
-                    return $link->group_id == $groupId;
-                }) : collect();
+            // Get previously failed links for this notification group
+            $previousLinks = isset($groupedPreviousNotifications['groups'][$groupId]) ?
+                $groupedPreviousNotifications['groups'][$groupId] : collect();
 
             $this->sendGroupHealthNotification($groupId, $links, $notificationType, $previousLinks);
         }
 
         // Send individual owner notifications
         foreach ($groupedNotifications['owners'] as $userId => $links) {
-            // Get previously failed links for this owner if any
-            $previousLinks = $previouslyFailedLinks ?
-                $previouslyFailedLinks->filter(function ($link) use ($userId) {
-                    return $link->created_by == $userId;
-                }) : collect();
+            // Get previously failed links for this owner
+            $previousLinks = isset($groupedPreviousNotifications['owners'][$userId]) ?
+                $groupedPreviousNotifications['owners'][$userId] : collect();
 
             $this->sendOwnerHealthNotification($userId, $links, $notificationType, $previousLinks);
         }

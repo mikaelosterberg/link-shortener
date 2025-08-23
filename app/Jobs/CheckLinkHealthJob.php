@@ -84,6 +84,7 @@ class CheckLinkHealthJob implements ShouldQueue
                 $updateData['first_failure_detected_at'] = null;
                 $updateData['notification_count'] = 0;
                 $updateData['notification_paused'] = false;
+                $updateData['last_notification_sent_at'] = null;
             }
 
             $this->link->update($updateData);
