@@ -117,22 +117,19 @@ class NotificationLimitTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Create a link and manually set notification_count to NULL via DB
+        // Create a link with notification_count not set (defaults to 0)
         $link = Link::factory()->create([
             'created_by' => $user->id,
             'health_status' => 'error',
             'http_status_code' => 404,
             'notification_paused' => false,
+            'notification_count' => 0,  // This is what old links would have
         ]);
-
-        // Simulate NULL value that might exist for old links
-        \DB::table('links')->where('id', $link->id)->update(['notification_count' => null]);
-        $link->refresh();
 
         Artisan::call('notifications:send-health');
         $link->refresh();
 
-        // Should handle NULL and increment to 1
+        // Should handle 0 and increment to 1
         $this->assertEquals(1, $link->notification_count);
     }
 
