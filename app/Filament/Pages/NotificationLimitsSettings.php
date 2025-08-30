@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\NotificationsCluster;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -16,17 +17,17 @@ class NotificationLimitsSettings extends Page implements HasForms
     use HasPageShield;
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
+    protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
     protected static string $view = 'filament.pages.notification-limits-settings';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $cluster = NotificationsCluster::class;
 
-    protected static ?string $navigationLabel = 'Notification Limits';
+    protected static ?string $navigationLabel = 'Limits & Settings';
 
     protected static ?string $title = 'Notification Limits';
 
-    protected static ?int $navigationSort = 35;
+    protected static ?int $navigationSort = 4;
 
     public ?array $data = [];
 
