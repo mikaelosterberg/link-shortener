@@ -28,6 +28,11 @@ class SendHealthNotifications extends Command
      */
     public function handle(NotificationService $notificationService)
     {
+        // Clear opcache for this script if function exists
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate(__FILE__, true);
+        }
+        
         $this->info('Checking for failed links...');
 
         // Get notification settings
