@@ -546,12 +546,12 @@ The application includes a comprehensive notification system that monitors link 
 **Automated Health Notifications:**
 ```bash
 # Health notifications (configure frequency as needed)
-0 9 * * * cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1   # Daily at 9 AM
-0 */6 * * * cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1  # Every 6 hours
-0 9 * * MON cd /path/to/project && php artisan notifications:send health >/dev/null 2>&1  # Weekly on Monday
+0 9 * * * cd /path/to/project && php artisan notifications:send-health >/dev/null 2>&1   # Daily at 9 AM
+0 */6 * * * cd /path/to/project && php artisan notifications:send-health >/dev/null 2>&1  # Every 6 hours
+0 9 * * MON cd /path/to/project && php artisan notifications:send-health >/dev/null 2>&1  # Weekly on Monday
 
 # Dry run to preview what would be sent
-php artisan notifications:send health --dry-run
+php artisan notifications:send-health --dry-run
 
 # Health checks every 30 minutes
 */30 * * * * cd /path/to/project && php artisan links:check-health >/dev/null 2>&1

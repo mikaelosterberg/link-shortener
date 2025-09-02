@@ -28,11 +28,34 @@ class SendHealthNotifications extends Command
      */
     public function handle(NotificationService $notificationService)
     {
-        // Clear opcache for this script if function exists
+        // Force opcache clear for ALL related files
         if (function_exists('opcache_invalidate')) {
+            // Clear this command file
             opcache_invalidate(__FILE__, true);
+
+            // Clear all service files
+            opcache_invalidate(app_path('Services/NotificationService.php'), true);
+
+            // Clear all model files
+            opcache_invalidate(app_path('Models/Link.php'), true);
+            opcache_invalidate(app_path('Models/NotificationType.php'), true);
+            opcache_invalidate(app_path('Models/NotificationGroup.php'), true);
+            opcache_invalidate(app_path('Models/LinkNotification.php'), true);
+
+            // Clear the entire opcache if possible (nuclear option)
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+                \Log::info('Opcache fully reset for notification command');
+            }
+
+            // Log opcache clear attempt
+            \Log::info('Opcache cleared for notification files', [
+                'timestamp' => now()->toIso8601String(),
+                'opcache_enabled' => ini_get('opcache.enable'),
+                'method' => function_exists('opcache_reset') ? 'full_reset' : 'file_invalidation',
+            ]);
         }
-        
+
         $this->info('Checking for failed links...');
 
         // Get notification settings
@@ -47,6 +70,12 @@ class SendHealthNotifications extends Command
                 $q->where('notification_paused', false)
                     ->orWhereNull('notification_paused');
             });
+
+        // DEBUG: Log the raw SQL query
+        \Log::info('DEBUG: Health notification query SQL', [
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+        ]);
 
         // Filter by selected status codes and conditions
         $query->where(function ($q) use ($notifyOnStatuses) {
@@ -90,7 +119,44 @@ class SendHealthNotifications extends Command
                 ->orWhere('last_notification_sent_at', '<', now()->subHours($cooldownHours));
         });
 
+        // DEBUG: Log the complete SQL query before execution
+        \Log::info('DEBUG: Complete health notification query', [
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+            'notify_on_statuses' => $notifyOnStatuses,
+            'max_notifications' => $maxNotifications,
+            'cooldown_hours' => $cooldownHours,
+        ]);
+
         $failedLinks = $query->with(['group', 'creator'])->get();
+
+        // DEBUG: Check charter-bestway specifically
+        $charterBestway = Link::where('short_code', 'charter-bestway')->first();
+        if ($charterBestway) {
+            \Log::info('DEBUG: charter-bestway state at query time', [
+                'id' => $charterBestway->id,
+                'notification_paused' => $charterBestway->notification_paused,
+                'notification_paused_is_null' => is_null($charterBestway->notification_paused),
+                'notification_paused_raw' => var_export($charterBestway->notification_paused, true),
+                'notification_count' => $charterBestway->notification_count,
+                'last_notification_sent_at' => $charterBestway->last_notification_sent_at,
+                'health_status' => $charterBestway->health_status,
+                'http_status_code' => $charterBestway->http_status_code,
+            ]);
+        }
+
+        // DEBUG: Log what we found
+        \Log::info('DEBUG: Query for failed links', [
+            'found_count' => $failedLinks->count(),
+            'links' => $failedLinks->map(function ($link) {
+                return [
+                    'id' => $link->id,
+                    'short_code' => $link->short_code,
+                    'notification_paused' => $link->notification_paused,
+                    'notification_count' => $link->notification_count,
+                ];
+            })->toArray(),
+        ]);
 
         // Get previously notified links that are still broken but hit notification limit
         $previouslyFailedLinks = Link::where('is_active', true)
@@ -128,6 +194,14 @@ class SendHealthNotifications extends Command
 
             // Show what notifications would be sent
             $this->showNotificationPlan($failedLinks, $previouslyFailedLinks);
+
+            return 0;
+        }
+
+        // Only send notifications if there are NEW failed links
+        if ($failedLinks->isEmpty()) {
+            $this->info('ℹ️ No new failed links to notify about.');
+            $this->info('✅ Health check complete!');
 
             return 0;
         }

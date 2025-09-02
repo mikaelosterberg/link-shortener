@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Link;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
 
@@ -14,19 +13,18 @@ class SendNotifications extends Command
      * @var string
      */
     protected $signature = 'notifications:send 
-                            {type : The type of notification (health|system|maintenance|all)}
+                            {type : The type of notification (system|maintenance)}
                             {--message= : Custom message for system/maintenance notifications}
                             {--severity=medium : Severity level for system alerts (low|medium|high)}
                             {--schedule= : Scheduled time for maintenance (e.g., "2024-01-01 12:00:00")}
-                            {--dry-run : Show what would be sent without actually sending}
-                            {--since= : For health notifications, only notify about links that failed since this timestamp}';
+                            {--dry-run : Show what would be sent without actually sending}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send notifications of various types (health, system alerts, maintenance)';
+    protected $description = 'Send system alerts and maintenance notifications';
 
     /**
      * Execute the console command.
@@ -37,74 +35,18 @@ class SendNotifications extends Command
         $dryRun = $this->option('dry-run');
 
         switch ($type) {
-            case 'health':
-                return $this->sendHealthNotifications($notificationService, $dryRun);
-
             case 'system':
                 return $this->sendSystemAlert($notificationService, $dryRun);
 
             case 'maintenance':
                 return $this->sendMaintenanceNotification($notificationService, $dryRun);
 
-            case 'all':
-                return $this->sendAllNotifications($notificationService, $dryRun);
-
             default:
                 $this->error("Invalid notification type: {$type}");
-                $this->line('Valid types: health, system, maintenance, all');
+                $this->line('Valid types: system, maintenance');
+                $this->line('For health notifications, use: php artisan notifications:send-health');
 
                 return Command::FAILURE;
-        }
-    }
-
-    /**
-     * Send health notifications for failed links
-     */
-    private function sendHealthNotifications(NotificationService $notificationService, bool $dryRun): int
-    {
-        $since = $this->option('since');
-
-        $this->info('🔍 Checking for failed links...');
-
-        $query = Link::query()
-            ->where('is_active', true)
-            ->whereIn('health_status', ['error', 'blocked'])
-            ->whereNotNull('last_checked_at');
-
-        if ($since) {
-            $sinceDate = now()->parse($since);
-            $query->where('last_checked_at', '>=', $sinceDate);
-            $this->line("Looking for links that failed since: {$sinceDate->format('Y-m-d H:i:s')}");
-        }
-
-        $failedLinks = $query->with(['group', 'creator'])->get();
-
-        if ($failedLinks->isEmpty()) {
-            $this->info('✅ No failed links found. All links are healthy!');
-
-            return Command::SUCCESS;
-        }
-
-        $this->warn("Found {$failedLinks->count()} failed links:");
-        foreach ($failedLinks as $link) {
-            $this->line("  - {$link->original_url} ({$link->health_status}): {$link->health_check_message}");
-        }
-
-        if ($dryRun) {
-            $this->info('🔍 DRY RUN - Health notifications would be sent');
-
-            return Command::SUCCESS;
-        }
-
-        try {
-            $notificationService->sendLinkHealthNotifications($failedLinks);
-            $this->info('✅ Health notifications sent successfully!');
-
-            return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $this->error('❌ Failed to send health notifications: '.$e->getMessage());
-
-            return Command::FAILURE;
         }
     }
 
@@ -220,26 +162,5 @@ class SendNotifications extends Command
 
             return Command::FAILURE;
         }
-    }
-
-    /**
-     * Send all pending notifications
-     */
-    private function sendAllNotifications(NotificationService $notificationService, bool $dryRun): int
-    {
-        $this->info('📢 Sending all pending notifications...');
-
-        // Only automatically send health notifications for "all"
-        // System and maintenance notifications should be manual
-        $result = $this->sendHealthNotifications($notificationService, $dryRun);
-
-        if ($result === Command::SUCCESS) {
-            $this->line('');
-            $this->info('ℹ️  Note: System and maintenance notifications are manual only.');
-            $this->line('Use: php artisan notifications:send system --message="Your message"');
-            $this->line('Use: php artisan notifications:send maintenance --message="Your message"');
-        }
-
-        return $result;
     }
 }
